@@ -73,8 +73,6 @@
         .q-number-badge { background: var(--k-purple); color: white; padding: 2px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; transition: background 0.5s; }
         .type-select { background: #f1f5f9; border: none; padding: 8px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; }
 
-        .estieab-box { background: #fff9c4 !important; border: 2px solid #fbc02d; border-radius: 12px; padding: 15px; margin-bottom: 15px; color: #000; font-weight: bold; line-height: 1.8; width: 100%; box-sizing: border-box; text-align: right; min-height: 90px; outline: none; white-space: pre-wrap; font-size: 1.15rem; }
-        
         .q-text-input { 
             width: 100%; min-height: 70px; padding: 15px; border: 2px solid #cbd5e1; border-radius: 12px; 
             color: inherit; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; outline: none; 
@@ -220,6 +218,7 @@
 
         const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
 
+        // إعدادات مشروع الدكتور سامي بالكامل (حتى يتحقق من الطلاب المسجلين في لوحته ويخزن النتائج لديه)
         const samyFirebaseConfig = {
           apiKey: "AIzaSyAJKKo_NfmOMA095ulSRDnwQvfHLeIz_s",
           authDomain: "samy-28452.firebaseapp.com",
@@ -231,17 +230,9 @@
           measurementId: "G-M0BB8TTD91"
         };
 
-        const firestoreConfig = {
-            apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
-            authDomain: "aztlg-494c3.firebaseapp.com",
-            projectId: "aztlg-494c3"
-        };
-
         const samyApp = firebase.initializeApp(samyFirebaseConfig, "samyApp");
-        const secondaryApp = firebase.initializeApp(firestoreConfig, "secondaryApp");
-
         const rtdb = samyApp.database();
-        const fsDb = secondaryApp.firestore();
+        const fsDb = samyApp.firestore(); // تم توحيد الاتصال ليكون حصرياً على سحابة الدكتور سامي
 
         function autoResizeTextarea(el) {
             el.style.height = 'auto';
@@ -350,7 +341,7 @@
                 const docRef = await fsDb.collection("allowed_students").doc(emailInput).get();
                 if (!docRef.exists) {
                     msgEl.style.color = "var(--q-red)";
-                    msgEl.innerText = "❌ هذا الإيميل غير مسجل في قائمة طلاب المدرسة المعتمدين!";
+                    msgEl.innerText = "❌ هذا الإيميل غير مسجل في قائمة طلاب الدكتور سامي المعتمدين!";
                     return;
                 }
 
@@ -378,7 +369,7 @@
             } catch (err) {
                 console.error(err);
                 msgEl.style.color = "var(--q-red)";
-                msgEl.innerText = "حدث خطأ في الاتصال بقاعدة البيانات.";
+                msgEl.innerText = "حدث خطأ في الاتصال بقاعدة البيانات الخاصة بالدكتور سامي.";
             }
         }
 
@@ -458,7 +449,6 @@
             document.getElementById('modal-overlay').style.display = 'block';
         }
 
-        // نافذة المعلم للتعديل أو الحذف النهائي للاختبار
         function openEditableReport(docId, answersArray, score, total) {
             closeModals();
             document.getElementById('report-modal-title').innerText = "مراجعة وتعديل درجات الطالب (خاص بالمعلم) 🎯";
@@ -485,7 +475,6 @@
 
             document.getElementById('score-summary').innerText = `النتيجة الإجمالية الحالية: ${score} من ${total}`;
             
-            // إضافة زري الحفظ والتحديث + زر الحذف النهائي لاختبار الطالب ليتمكن من الإعادة
             document.getElementById('save-review-btn-container').innerHTML = `
                 <button class="btn" style="background:#10b981; padding:12px 20px; font-size:1.1rem;" onclick="saveGradeChanges('${docId}', ${total})">
                     <i class="fas fa-save"></i> حفظ التحديثات 💾
@@ -526,9 +515,8 @@
             closeModals();
         }
 
-        // دالة الحذف النهائي لسجل اختبار الطالب ليتمكن من إعادته
         async function deleteStudentExamRecord(docId) {
-            if (!confirm("⚠️ تحذير: هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً؟ سيتمكن من إعادة الاختبار من جديد.")) return;
+            if (!confirm("⚠️ تحذير: هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً من سحابة الدكتور سامي؟ سيتمكن من إعادة الاختبار من جديد.")) return;
             try {
                 await fsDb.collection("alkfaeat_results").doc(docId).delete();
                 alert("تم حذف سجل الاختبار بنجاح، ويمكن للطالب الآن إعادة الاختبار.");
@@ -582,6 +570,7 @@
             const totalQuestions = cards.length;
 
             try {
+                // تخزين النتيجة في Realtime Database الخاصة بالدكتور سامي لتظهر في لوحة المتابعة
                 await rtdb.ref("quran_results").push().set({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
@@ -600,6 +589,7 @@
                     }
                 });
 
+                // تخزين النتيجة في Firestore الخاصة بالدكتور سامي لمنع تكرار الاختبار وحفظ السجل
                 await fsDb.collection("alkfaeat_results").add({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
@@ -619,7 +609,7 @@
                 `;
             } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء إرسال النتيجة.");
+                alert("حدث خطأ أثناء إرسال النتيجة إلى سحابة د. سامي.");
             }
         }
 
@@ -746,7 +736,6 @@
                 localStorage.removeItem('samy_exam_data');
                 currentOpenModelName = null;
                 document.getElementById('current-model-label').innerText = "📁 نموذج جديد";
-                clearAll();
             }
         }
 
