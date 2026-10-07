@@ -3,380 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>اختبار القرآن الكريم تفسيره وعلومه - د. سامي بن محمد العمر</title>
-    <!-- Firebase SDKs -->
+    <title>منصة د. سامي بن محمد العمر - القرآن الكريم تفسيره وعلومه</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        :root {
-            --primary-color: #1e3a8a;
-            --secondary-color: #d4af37;
-            --bg-color: #fdfaf1;
-            --text-color: #222;
-            --card-bg: #ffffff;
-            --danger: #dc3545;
-            --success: #28a745;
+        :root { 
+            --royal-blue: #1e3a8a; --q-red: #ef4444; --bg-page: #f8fafc; 
+            --success-green: #10b981; --k-purple: #7c3aed; --card-border: #e2e8f0;
+            --text-color: #1e293b; --card-bg: #ffffff;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Arial; 
+            background: var(--bg-page); color: var(--text-color); margin: 0; padding: 20px; 
+            display: flex; flex-direction: column; align-items: center; line-height: 1.6;
+            transition: background 0.5s ease, color 0.5s ease;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        .user-header {
+            width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 5px solid var(--royal-blue); 
+            margin-bottom: 20px; box-sizing: border-box; gap: 15px; flex-wrap: wrap; transition: background 0.5s;
+        }
+        .header-right { flex: 1; text-align: right; min-width: 140px; }
+        .header-center { flex: 0 0 auto; display: flex; justify-content: center; }
+        .header-left { flex: 1; text-align: left; min-width: 140px; }
+
+        .user-name { margin: 0; color: var(--royal-blue); font-weight: bold; font-size: 1.3rem; }
+        .school-name { margin: 0; color: #64748b; font-weight: bold; font-size: 0.95rem; }
+        .logo-box { background: var(--royal-blue); width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.4rem; transition: background 0.5s; }
+
+        .top-action-bar {
+            width: 100%; max-width: 850px; background: #1e293b; border-radius: 15px; padding: 12px 20px;
+            display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px; box-sizing: border-box; gap: 10px; flex-wrap: wrap; z-index: 999;
+        }
+        .bar-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .array-import-box, .search-result-box {
+            width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box; transition: background 0.5s;
+        }
+        .array-textarea {
+            width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
+            font-family: monospace; font-size: 0.9rem; direction: ltr; text-align: left; outline: none; box-sizing: border-box; resize: vertical; margin-bottom: 10px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: var(--card-bg);
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            padding: 30px;
-            border-top: 8px solid var(--primary-color);
+        .auth-card {
+            background: var(--card-bg); width: 100%; max-width: 850px; border-radius: 20px; padding: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; box-sizing: border-box; margin-bottom: 25px; transition: background 0.5s;
+        }
+        .auth-input { width: 80%; max-width: 400px; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; margin-bottom: 15px; text-align: center; font-size: 1.1rem; outline: none; }
+
+        .container { width: 100%; max-width: 850px; padding-bottom: 120px; display: none; }
+        .question-card { background: var(--card-bg); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 2px solid var(--card-border); position: relative; text-align: right; box-sizing: border-box; transition: 0.3s, background 0.5s; }
+        .question-card::before { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 8px; background: var(--k-purple); transition: background 0.5s; }
+        
+        .question-card.unanswered-alert { border: 2px solid var(--q-red) !important; background-color: #fff5f5; }
+        .question-card.unanswered-alert .q-number-badge { background-color: var(--q-red) !important; }
+
+        .card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .q-number-badge { background: var(--k-purple); color: white; padding: 2px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; transition: background 0.5s; }
+        .type-select { background: #f1f5f9; border: none; padding: 8px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; }
+
+        .q-text-input { 
+            width: 100%; min-height: 70px; padding: 15px; border: 2px solid #cbd5e1; border-radius: 12px; 
+            color: inherit; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; outline: none; 
+            text-align: right; box-sizing: border-box; word-wrap: break-word; font-family: inherit; 
+            background: rgba(0,0,0,0.02); line-height: 1.8; overflow: hidden; resize: none; 
         }
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+        .essay-input { width: 100%; min-height: 80px; padding: 12px; border: 2px inset #e2e8f0; border-radius: 12px; background: rgba(0,0,0,0.02); font-weight: bold; color: inherit; margin-top: 10px; outline: none; text-align: right; font-size: 1.1rem; white-space: pre-wrap; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 600px) {
+            .options-grid { display: flex; flex-direction: column; }
         }
 
-        .header h1 {
-            color: var(--primary-color);
-            margin: 0 0 10px 0;
-            font-size: 1.8rem;
-        }
+        .opt-pair-row { display: flex; align-items: center; background: var(--card-bg); border: 1.5px solid #d1d5db; border-radius: 10px; padding: 12px; box-sizing: border-box; cursor: pointer; transition: 0.2s, background 0.5s; }
+        .opt-label { font-weight: bold; color: var(--royal-blue); margin-left: 8px; white-space: nowrap; font-size: 1.05rem; flex-shrink: 0; }
+        .opt-word { width: 100%; border: none; outline: none; font-weight: bold; color: inherit; background: transparent; text-align: right; font-family: inherit; cursor: inherit; font-size: 1.05rem; }
 
-        .header p {
-            margin: 5px 0;
-            color: #555;
-            font-weight: bold;
-        }
+        .correct-ans-box { margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid #bbf7d0; text-align: right; }
+        .correct-input { width: 100%; background: transparent; border: none; outline: none; color: #166534; font-weight: bold; text-align: right; font-family: inherit; }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+        .btn { border: none; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; gap: 6px; transition: 0.3s; font-family: inherit; font-size: 0.85rem; white-space: nowrap; }
+        .btn-add { background: #3b82f6; } .btn-save { background: #a855f7; } .btn-load { background: #4f46e5; }
+        .btn-link { background: #06b6d4; } .btn-del { background: #ef4444; } .btn-rename { background: #f59e0b; }
+        .btn-clear { background: #64748b; padding: 8px; border-radius: 50%; }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
+        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only { display: none !important; }
+        body.student-mode .selected-opt { background: rgba(59, 130, 246, 0.2) !important; border: 2px solid var(--royal-blue) !important; }
 
-        input[type="text"], input[type="email"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus, input[type="email"]:focus {
-            border-color: var(--primary-color);
-            outline: none;
-        }
-
-        .btn {
-            display: inline-block;
-            width: 100%;
-            padding: 12px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .btn:hover {
-            background: #152860;
-        }
-
-        .question-card {
-            margin-bottom: 25px;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background-color: #fafafa;
-        }
-
-        .question-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 12px;
-            color: var(--primary-color);
-        }
-
-        .option-label {
-            display: block;
-            padding: 10px;
-            margin: 8px 0;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .option-label:hover {
-            background: #f0f4ff;
-            border-color: var(--primary-color);
-        }
-
-        .option-label input {
-            margin-left: 10px;
-        }
-
-        #timer {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--danger);
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
-        }
-
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .hidden {
-            display: none;
-        }
+        #report-modal, #cloud-modal, #history-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 700px; max-height: 85%; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 25px; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.4); }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .report-table th, .report-table td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
+        
+        .cloud-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e2e8f0; gap: 10px; flex-wrap: wrap; }
+        .cloud-item:hover { background: #f8fafc; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>مادة: القرآن الكريم تفسيره وعلومه 📖</h1>
-        <p>أستاذ المادة: د. سامي بن محمد العمر</p>
+    <script>
+        const themes = [
+            { bg: "#f8fafc", primary: "#1e3a8a", purple: "#7c3aed", text: "#1e293b", card: "#ffffff", border: "#e2e8f0" },
+            { bg: "#fdf4ff", primary: "#86198f", purple: "#c084fc", text: "#1e293b", card: "#ffffff", border: "#f5d0fe" },
+            { bg: "#f0fdf4", primary: "#166534", purple: "#059669", text: "#1e293b", card: "#ffffff", border: "#bbf7d0" }
+        ];
+        const selectedTheme = themes[Math.floor(Math.random() * themes.length)];
+        const root = document.documentElement;
+        root.style.setProperty('--royal-blue', selectedTheme.primary);
+        root.style.setProperty('--k-purple', selectedTheme.purple);
+        root.style.setProperty('--bg-page', selectedTheme.bg);
+        root.style.setProperty('--text-color', selectedTheme.text);
+        root.style.setProperty('--card-bg', selectedTheme.card);
+        root.style.setProperty('--card-border', selectedTheme.border);
+    </script>
+
+    <div id="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1999;" onclick="closeModals()"></div>
+    
+    <div id="cloud-modal">
+        <h2 style="text-align: center; color: var(--royal-blue); margin-top:0;"><i class="fas fa-cloud"></i> النماذج المحفوظة في السحاب</h2>
+        <p style="text-align: center; color: #64748b; font-size: 0.9rem;">اختر النموذج لفتحه:</p>
+        <div id="cloud-models-list" style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"></div>
+        <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق</button>
     </div>
 
-    <!-- تنبيه الخطأ -->
-    <div id="errorAlert" class="alert alert-danger"></div>
+    <div id="history-modal">
+        <h2 style="text-align: center; color: var(--royal-blue);"><i class="fas fa-history"></i> سجل نتائج الاختبارات 📊</h2>
+        <div id="history-list" style="margin-top: 20px;"></div>
+        <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق السجل</button>
+    </div>
 
-    <!-- شاشة تسجيل الدخول والتحقق -->
-    <div id="authScreen">
-        <div class="form-group">
-            <label for="studentEmail">البريد الإلكتروني المعتمد:</label>
-            <input type="email" id="studentEmail" placeholder="أدخل إيميلك المعتمد..." required>
+    <div id="report-modal">
+        <h2 style="text-align: center; color: var(--royal-blue);" id="report-modal-title">تقرير أداء الطالب 🎯</h2>
+        <div id="score-summary" style="text-align: center; font-size: 1.4rem; font-weight: bold; margin: 20px 0;"></div>
+        <table class="report-table">
+            <thead>
+                <tr id="report-table-header"><th>#</th><th>السؤال</th><th>إجابتك</th><th>الصحيحة</th><th>الدرجة</th></tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+        </table>
+        <div id="save-review-btn-container" style="margin-top: 20px; text-align: center;"></div>
+        <button class="btn" style="background:#64748b; width:100%; margin-top:10px; justify-content:center;" onclick="closeModals()">إغلاق التقرير</button>
+    </div>
+
+    <!-- ترويسة الصفحة باسم د. سامي بن محمد العمر -->
+    <div class="user-header" id="main-header">
+        <div class="header-right"><h2 class="user-name">د. سامي بن محمد العمر</h2></div>
+        <div class="header-center"><div class="logo-box"><i class="fas fa-book-open"></i></div></div>
+        <div class="header-left"><p class="school-name">القرآن الكريم تفسيره وعلومه 📖</p></div>
+    </div>
+
+    <div class="top-action-bar admin-only" id="admin-top-bar">
+        <div class="bar-group">
+            <span id="current-model-label" style="color: #38bdf8; font-weight: bold; font-size: 0.95rem; margin-left: 5px;">📁 نموذج جديد</span>
+            <button class="btn btn-save" onclick="saveToCloud()"><i class="fas fa-save"></i> حفظ</button>
+            <button class="btn btn-link" onclick="copyCurrentModelLink()"><i class="fas fa-link"></i> رابط الطلاب</button>
+            <button class="btn btn-rename" onclick="renameCurrentModel()"><i class="fas fa-signature"></i> إعادة تسمية</button>
+            <button class="btn btn-del" onclick="deleteCurrentModel()"><i class="fas fa-trash"></i> حذف</button>
         </div>
-        <button class="btn" onclick="verifyStudent()">التحقق وبدء الاختبار 🚀</button>
+        <div class="bar-group">
+            <button class="btn btn-load" onclick="loadFromCloud()"><i class="fas fa-folder-open"></i> فتح نموذج</button>
+            <button class="btn btn-add" onclick="addQuestion()"><i class="fas fa-plus"></i> سؤال</button>
+            <button class="btn btn-clear" title="مسح الكل" onclick="clearAll()"><i class="fas fa-eraser"></i></button>
+        </div>
     </div>
 
-    <!-- شاشة الاختبار -->
-    <div id="examScreen" class="hidden">
-        <div id="timer">الوقت المتبقي: <span id="timeLeft">--:--</span></div>
-        <form id="quizForm">
-            <div id="questionsContainer"></div>
-            <button type="button" class="btn" onclick="submitExam()">تسليم الاختبار 🏁</button>
-        </form>
+    <div id="student-auth-container" style="display:none;">
+        <div class="auth-card">
+            <h2 style="color: var(--royal-blue); margin-top: 0;">تسجيل دخول الطالب 🎓</h2>
+            <p style="color: #64748b; margin-bottom: 20px;">الرجاء إدخال إيميل منصة مدرستي المعتمد لبدء اختبار القرآن الكريم وعلومه:</p>
+            <input type="email" id="studentEmailInput" class="auth-input" placeholder="sxxxxxxx@rb.moe.gov.sa">
+            <br>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn" style="background: var(--success-green); padding: 12px 30px; font-size: 1.1rem;" onclick="verifyStudentEmail()">دخول المنصة 🚀</button>
+                <button class="btn" style="background: var(--royal-blue); padding: 12px 20px; font-size: 1rem;" onclick="openStudentHistory()"><i class="fas fa-history"></i> سجل اختباراتي 📊</button>
+            </div>
+            <p id="auth-status-msg" style="margin-top: 15px; font-weight: bold;"></p>
+        </div>
     </div>
 
-    <!-- شاشة النتيجة -->
-    <div id="resultScreen" class="hidden" style="text-align: center;">
-        <h2 style="color: var(--success);">تم تسليم الاختبار بنجاح 🎉</h2>
-        <p id="studentGreeting" style="font-size: 1.2rem; font-weight: bold;"></p>
-        <p>نشكرك على إتمام الاختبار. تم تسجيل إجاباتك بنجاح في النظام.</p>
+    <div class="search-result-box admin-only">
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-search"></i> استعلام ومراجعة درجات طالب بإيميله المدرسي (خاص بالمعلم):</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="email" id="teacherSearchEmail" class="auth-input" style="flex: 1; margin: 0; font-size: 1rem; padding: 10px;" placeholder="أدخل إيميل الطالب هنا sxxxxxxx@rb.moe.gov.sa">
+            <button class="btn" style="background: #0284c7; padding: 10px 20px;" onclick="teacherSearchByEmail()"><i class="fas fa-search"></i> بحث ومراجعة</button>
+        </div>
     </div>
-</div>
 
-<script>
-    // إعدادات سحابة د. سامي العمر (samy-28452)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAJKKo_NfmOMA0955ulSRDnwQvfHLeIz_s",
-        authDomain: "samy-28452.firebaseapp.com",
-        databaseURL: "https://samy-28452-default-rtdb.firebaseio.com",
-        projectId: "samy-28452",
-        storageBucket: "samy-28452.firebasestorage.app",
-        messagingSenderId: "248617107030",
-        appId: "1:248617107030:web:1a884c43c2461e24c945f7"
-    };
+    <div class="array-import-box admin-only">
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (الصق هنا مباشرة):</label>
+        <textarea id="arrayInputText" class="array-textarea" placeholder="الصق مصفوفة الـ JS هنا (مع أو بدون const rawQuizData = [...])"></textarea>
+        <button class="btn" style="background:#0284c7;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة تلقائياً</button>
+    </div>
 
-    firebase.initializeApp(firebaseConfig);
-    const fsDb = firebase.firestore();
-    const rtdb = firebase.database();
+    <div class="container" id="quiz-content"></div>
 
-    let currentStudent = { name: '', email: '' };
-    let timerInterval = null;
-    let totalSeconds = 20 * 60; // 20 دقيقة مدة الاختبار
+    <div id="student-actions" style="display: none; text-align: center; margin-bottom: 50px; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <button id="main-grade-btn" class="btn" style="background:#10b981; padding:15px 30px" onclick="gradeExam()"><i class="fas fa-graduation-cap"></i> انتهيت.. اعتماد النتيجة</button>
+        <button class="btn" style="background:var(--royal-blue); padding:15px 25px;" onclick="openStudentHistory()"><i class="fas fa-history"></i> سجل اختباراتي السابقة 📊</button>
+    </div>
 
-    // قائمة أسئلة التفسير وعلوم القرآن
-    const questions = [
-        {
-            id: 1,
-            text: "سؤال 1: ما المنسوب إلى الصحابي من أقوال أو أفعال يسمى في علوم الحديث والتفسير بـ:",
-            options: ["المرفوع", "الموقوف", "المقطوع", "المرسل"],
-            correct: 1
-        },
-        {
-            id: 2,
-            text: "سؤال 2: أول سورة نزلت كاملة في القرآن الكريم هي سورة:",
-            options: ["العلق", "الفاتحة", "المدثر", "الإخلاص"],
-            correct: 1
-        },
-        {
-            id: 3,
-            text: "سؤال 3: المراد بالتفسير بالمأثور هو التفسير المستمد من:",
-            options: ["القرآن والسنة وأقوال الصحابة والتابعين", "الرأي والاجتهاد اللغوي", "الاستنباط الأصولي الفقهي", "الفلسفة والتصوف"],
-            correct: 0
-        },
-        {
-            id: 4,
-            text: "سؤال 4: نزول القرآن الكريم جملة واحدة إلى بيت العزة في السماء الدنيا كان في:",
-            options: ["ليلة النصف من شعبان", "ليلة القدر", "يوم عرفة", "شهر رجب"],
-            correct: 1
+    <script>
+        let authenticatedStudentEmail = "";
+        let authenticatedStudentName = "";
+        let loadedExamQuestions = null;
+        let currentOpenModelName = null;
+
+        const typeMap = {
+            'k_multi': 'اختر من متعدد',
+            'k_true': 'صح وخطأ',
+            'k_correct_error': 'صحح الخطأ',
+            'k_count': 'عَدِّدْ',
+            'k_define': 'عَرِّفْ',
+            'k_mention': 'اذْكُرْ'
+        };
+        const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
+
+        // تم ربط بيانات Firebase الخاصة بزميلك من الصورة المرفقة
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJKKo_NfmOMA0955ulSRDnw",
+            authDomain: "samy-28452.firebaseapp.com",
+            databaseURL: "https://samy-28452-default-rtdb.firebaseio.com",
+            projectId: "samy-28452",
+            storageBucket: "samy-28452.firebasestorage.app",
+            messagingSenderId: "248617107030",
+            appId: "1:248617107030:web:1a884c43c24",
+            measurementId: "G-M0BB8TTD91"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        const fsDb = firebase.firestore();
+        const rtdb = firebase.database();
+
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
         }
-    ];
 
-    async function verifyStudent() {
-        const emailInput = document.getElementById("studentEmail").value.trim().toLowerCase();
-        const alertBox = document.getElementById("errorAlert");
-        alertBox.style.display = "none";
-
-        if (!emailInput) {
-            showAlert("يرجى أدخال البريد الإلكتروني.");
-            return;
-        }
-
-        try {
-            // التحقق من قائمة الطلاب المصرح لهم في Firestore
-            const docRef = fsDb.collection("allowed_students").doc(emailInput);
-            const doc = await docRef.get();
-
-            if (doc.exists) {
-                currentStudent.email = emailInput;
-                currentStudent.name = doc.data().name || "طالب";
-                
-                // الانتقال لشاشة الاختبار
-                document.getElementById("authScreen").classList.add("hidden");
-                document.getElementById("examScreen").classList.remove("hidden");
-                renderQuestions();
-                startTimer();
-            } else {
-                showAlert("عذراً، هذا البريد الإلكتروني غير مصرح له بآداء الاختبار حالياً. يرجى مراجعة المحاضر.");
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
-        } catch (error) {
-            console.error(error);
-            showAlert("حدث خطأ أثناء الاتصال بالخادم. حاول مرة أخرى.");
+            return array;
         }
-    }
 
-    function showAlert(msg) {
-        const alertBox = document.getElementById("errorAlert");
-        alertBox.innerText = msg;
-        alertBox.style.display = "block";
-    }
+        function addQuestion(data = null) {
+            const container = document.getElementById('quiz-content');
+            const card = document.createElement('div');
+            const type = data ? data.type : 'k_multi';
+            card.className = `question-card`;
 
-    function renderQuestions() {
-        const container = document.getElementById("questionsContainer");
-        container.innerHTML = "";
+            const needsKey = (['k_true','k_multi'].includes(type));
+            const isStudent = document.body.classList.contains('student-mode');
+            const qTextVal = data ? (data.text || "") : "";
+            const correctAnsVal = data ? (data.ans || "") : "";
 
-        questions.forEach((q, index) => {
-            let optionsHtml = "";
-            q.options.forEach((opt, optIndex) => {
-                optionsHtml += `
-                    <label class="option-label">
-                        <input type="radio" name="q${q.id}" value="${optIndex}">
-                        ${opt}
-                    </label>
-                `;
-            });
-
-            container.innerHTML += `
-                <div class="question-card">
-                    <div class="question-title">${q.text}</div>
-                    ${optionsHtml}
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                    <div class="card-meta">
+                        <span class="q-number-badge"></span>
+                        <select class="type-select" ${isStudent ? 'disabled' : ''} onchange="toggleType(this)">
+                            ${Object.entries(typeMap).map(([k,v])=>`<option value="${k}" ${type===k?'selected':''}>${v}</option>`).join('')}
+                        </select>
+                    </div>
+                    <i class="fas fa-times-circle remove-btn" style="color:#cbd5e1; cursor:pointer;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
                 </div>
+                <div class="q-area">
+                    ${isStudent ? `<div class="q-text-input" style="cursor:default; overflow:visible; height:auto;">${qTextVal}</div>` : `<textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا...">${qTextVal}</textarea>`}
+                </div>
+                <div class="ans-grid-area">${renderOptions(type, data, isStudent)}</div>
+                <div class="correct-ans-box admin-only" style="${needsKey ? '' : 'display:none'}">
+                    <input type="text" placeholder="حرف الإجابة أو نصها الصحيح" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
+                </div>
+                <input type="hidden" class="hidden-correct-ans" value="${correctAnsVal}">
+                <input type="hidden" class="hidden-q-text" value="${qTextVal}">
             `;
-        });
-    }
-
-    function startTimer() {
-        updateTimerDisplay();
-        timerInterval = setInterval(() => {
-            totalSeconds--;
-            updateTimerDisplay();
-
-            if (totalSeconds <= 0) {
-                clearInterval(timerInterval);
-                alert("انتهى الوقت المحدد للاختبار! يتم تسليم الإجابات تلقائياً.");
-                submitExam();
-            }
-        }, 1000);
-    }
-
-    function updateTimerDisplay() {
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        document.getElementById("timeLeft").innerText = 
-            `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    }
-
-    async function submitExam() {
-        if (timerInterval) clearInterval(timerInterval);
-
-        let score = 0;
-        const answers = {};
-
-        questions.forEach(q => {
-            const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
-            if (selected) {
-                const val = parseInt(selected.value);
-                answers[`q${q.id}`] = val;
-                if (val === q.correct) {
-                    score++;
-                }
-            } else {
-                answers[`q${q.id}`] = -1; // لم يجب
-            }
-        });
-
-        const totalQuestions = questions.length;
-        const finalPercentage = Math.round((score / totalQuestions) * 100);
-
-        try {
-            // حفظ النتيجة في Realtime Database
-            const safeEmailKey = currentStudent.email.replace(/\./g, '_');
-            await rtdb.ref('results/' + safeEmailKey).set({
-                name: currentStudent.name,
-                email: currentStudent.email,
-                score: score,
-                total: totalQuestions,
-                percentage: finalPercentage,
-                submittedAt: new Date().toISOString(),
-                answers: answers
+            container.appendChild(card);
+            
+            card.querySelectorAll('textarea').forEach(ta => {
+                autoResizeTextarea(ta);
+                ta.addEventListener('input', function() { autoResizeTextarea(this); saveAll(); });
             });
 
-            document.getElementById("examScreen").classList.add("hidden");
-            document.getElementById("resultScreen").classList.remove("hidden");
-            document.getElementById("studentGreeting").innerText = `أهلاً بك يا ${currentStudent.name}`;
-        } catch (err) {
-            console.error(err);
-            alert("حدث خطأ في حفظ النتيجة. يرجى التواصل مع أستاذ المادة.");
+            card.querySelectorAll('.opt-pair-row').forEach(row => {
+                row.onclick = () => { 
+                    const examId = new URLSearchParams(window.location.search).get('exam');
+                    if (examId && localStorage.getItem('submitted_' + examId) === 'true') return;
+                    if (isStudent) { 
+                        card.classList.remove('unanswered-alert');
+                        card.querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt')); 
+                        row.classList.add('selected-opt');
+                    }
+                };
+            });
+
+            updateNumbers();
+            if(!isStudent) saveAll();
         }
-    }
-</script>
+
+        function renderOptions(t, d, isStudent) {
+            if (['k_correct_error', 'k_count', 'k_define', 'k_mention'].includes(t)) {
+                const contenteditableAttr = isStudent ? 'contenteditable="true" oninput="this.closest(\'.question-card\').classList.remove(\'unanswered-alert\')"' : 'contenteditable="true"';
+                let placeholderText = "إجابة الطالب هنا...";
+                
+                if (t === 'k_correct_error') placeholderText = "اكتب التصحيح هنا...";
+                else if (t === 'k_count') placeholderText = "1-\n2-\n3-";
+                else if (t === 'k_define') placeholderText = "اكتب التعريف هنا...";
+                else if (t === 'k_mention') placeholderText = "اذكر النقاط هنا...";
+
+                return `<div class="essay-input" ${contenteditableAttr} placeholder="${placeholderText}"></div>`;
+            }
+
+            let opts = d?.opts ? [...d.opts] : (t === 'k_true' ? ['صح', 'خطأ'] : ['', '', '', '']);
+            if (isStudent && opts.length > 0) opts = shuffleArray(opts);
+
+            let h = '<div class="options-grid">';
+            for(let i=0; i<opts.length; i++) {
+                const readonlyInput = isStudent ? 'readonly style="background:transparent; cursor:pointer;"' : '';
+                h+=`<div class="opt-pair-row"><span class="opt-label">${labels[i]}</span><input type="text" class="opt-word opt" ${readonlyInput} placeholder="خيار ${labels[i]}" value="${opts[i]||''}" oninput="saveAll()"></div>`;
+            }
+            return h + '</div>';
+        }
+
+        function importArrayQuestions() {
+            let rawData = document.getElementById('arrayInputText').value.trim();
+            if (!rawData) { alert("الرجاء لصق مصفوفة الأسئلة في مربع النص أولاً!"); return; }
+
+            try {
+                rawData = rawData.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                if (rawData.startsWith("const") || rawData.startsWith("let") || rawData.startsWith("var")) {
+                    const equalIndex = rawData.indexOf("=");
+                    if (equalIndex !== -1) rawData = rawData.substring(equalIndex + 1).trim();
+                }
+                if (rawData.endsWith(";")) rawData = rawData.substring(0, rawData.length - 1).trim();
+
+                let arr;
+                try { arr = Function('"use strict"; return (' + rawData + ');')(); }
+                catch (evalErr) { arr = JSON.parse(rawData); }
+
+                if (!Array.isArray(arr)) { alert("الخطأ: النص المدخل ليس مصفوفة صحيحة!"); return; }
+
+                arr.forEach(item => {
+                    let mappedType = 'k_multi';
+                    let tName = (item.t || "").trim();
+                    if (tName === "صح وخطأ") mappedType = 'k_true';
+                    else if (tName === "صحح الخطأ") mappedType = 'k_correct_error';
+                    else if (tName === "عدد") mappedType = 'k_count';
+                    else if (tName === "عرف") mappedType = 'k_define';
+                    else if (tName === "اذكر") mappedType = 'k_mention';
+                    
+                    addQuestion({ type: mappedType, text: item.q || "", opts: item.opts || [], ans: item.ans || "" });
+                });
+
+                saveAll();
+                document.getElementById('arrayInputText').value = "";
+                alert(`تم استيراد وتوزيع ${arr.length} سؤالاً بنجاح!`);
+            } catch (e) {
+                alert("حدث خطأ أثناء قراءة المصفوفة. تأكد من نسخها كاملة بأقواسها.");
+            }
+        }
+
+        async function verifyStudentEmail() {
+            const emailInput = document.getElementById('studentEmailInput').value.trim().toLowerCase();
+            const msgEl = document.getElementById('auth-status-msg');
+
+            if (!emailInput || !emailInput.includes('@')) {
+                msgEl.style.color = "var(--q-red)";
+                msgEl.innerText = "الرجاء إدخال إيميل منصة مدرستي صحيح.";
+                return;
+            }
+
+            msgEl.style.color = "var(--royal-blue)";
+            msgEl.innerText = "جاري التحقق من السجل المدرسي... ⏳";
+
+            try {
+                const docRef = await fsDb.collection("allowed_students").doc(emailInput).get();
+                if (!docRef.exists) {
+                    msgEl.style.color = "var(--q-red)";
+                    msgEl.innerText = "❌ هذا الإيميل غير مسجل في قائمة طلاب المدرسة المعتمدين!";
+                    return;
+                }
+
+                authenticatedStudentEmail = emailInput;
+                authenticatedStudentName = docRef.data().name || "طالب";
+
+                const examId = new URLSearchParams(window.location.search).get('exam');
+                
+                const prevResult = await fsDb.collection("alkfaeat_results")
+                    .where("email", "==", authenticatedStudentEmail)
+                    .where("model_id", "==", examId).get();
+
+                if (!prevResult.empty) {
+                    msgEl.style.color = "var(--q-red)";
+                    msgEl.innerText = `عذراً يا ${authenticatedStudentName}، لقد أديت هذا الاختبار مسبقاً ولا يمكنك إعادته.`;
+                    return;
+                }
+
+                localStorage.removeItem('submitted_' + examId);
+
+                document.getElementById('student-auth-container').style.display = 'none';
+                document.querySelector('.container').style.display = 'block';
+                document.getElementById('student-actions').style.display = 'flex';
+
+                alert(`أهلاً بك يا ${authenticatedStudentName} 🌟. يمكنك البدء في حل اختبار القرآن الكريم وعلومه.`);
+            } catch (err) {
+                console.error(err);
+                msgEl.style.color = "var(--q-red)";
+                msgEl.innerText = "حدث خطأ في الاتصال بقاعدة البيانات. حاول مرة أخرى.";
+            }
+        }
+
+        async function saveToCloud() {
+            let modelNameToSave = currentOpenModelName;
+
+            if (!modelNameToSave) {
+                modelNameToSave = prompt("أدخل اسم النموذج لحفظه في السحاب:");
+                if (!modelNameToSave || !modelNameToSave.trim()) return;
+                currentOpenModelName = modelNameToSave.trim();
+                document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
+            }
+
+            const dataToSave = JSON.parse(localStorage.getItem('fifi_final_v_secured') || '[]');
+            
+            await rtdb.ref('models/' + modelNameToSave).set({
+                teacher: "د. سامي بن محمد العمر",
+                subject: "القرآن الكريم تفسيره وعلومه",
+                data: dataToSave,
+                date: new Date().toLocaleString()
+            });
+
+            alert(`تم حفظ التعديلات بنجاح في نموذج: "${modelNameToSave}" 💾`);
+        }
+
+        function closeModals() { 
+            document.getElementById('report-modal').style.display = 'none'; 
+            document.getElementById('cloud-modal').style.display = 'none'; 
+            document.getElementById('history-modal').style.display = 'none';
+            document.getElementById('modal-overlay').style.display = 'none'; 
+        }
+
+        function updateNumbers() { document.querySelectorAll('.q-number-badge').forEach((b, i) => b.innerText = `السؤال ${i+1}`); }
+        function saveAll() { 
+            const qs = []; 
+            document.querySelectorAll('.question-card').forEach(c => { 
+                const t = c.querySelector('.type-select').value; 
+                let d = { type: t, ans: c.querySelector('.ans-val')?.value || '' }; 
+                d.text = c.querySelector('.q-main')?.value || ""; 
+                d.opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value); 
+                qs.push(d); 
+            }); 
+            localStorage.setItem('fifi_final_v_secured', JSON.stringify(qs)); 
+        }
+
+        function loadQuestions() { 
+            const id = new URLSearchParams(window.location.search).get('exam'); 
+            if (id) { 
+                document.body.classList.add('student-mode'); 
+                document.getElementById('student-auth-container').style.display = 'block';
+
+                rtdb.ref('models/' + id).once('value', s => { 
+                    if (s.val() && s.val().data) {
+                        loadedExamQuestions = s.val().data;
+                        let shuffledQuestions = shuffleArray([...loadedExamQuestions]);
+                        shuffledQuestions.forEach(q => addQuestion(q));
+                        setTimeout(() => { document.querySelectorAll('textarea').forEach(ta => autoResizeTextarea(ta)); }, 100);
+                    } else {
+                        alert("هذا النموذج غير موجود أو تم حذفه من السحاب.");
+                    }
+                }); 
+            } else { 
+                document.querySelector('.container').style.display = 'block';
+                const s = localStorage.getItem('fifi_final_v_secured'); 
+                if(s) { 
+                    JSON.parse(s).forEach(q => addQuestion(q)); 
+                    setTimeout(() => { document.querySelectorAll('textarea').forEach(ta => autoResizeTextarea(ta)); }, 100);
+                } 
+            } 
+        }
+
+        function clearAll() {
+            if(confirm("هل أنت متأكد من مسح جميع الأسئلة؟")) {
+                document.getElementById('quiz-content').innerHTML = '';
+                localStorage.removeItem('fifi_final_v_secured');
+                currentOpenModelName = null;
+                document.getElementById('current-model-label').innerText = "📁 نموذج جديد";
+            }
+        }
+
+        window.onload = function() { loadQuestions(); };
+    </script>
 </body>
 </html>
