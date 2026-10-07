@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة د. سامي بن محمد العمر - الاختبارات الإلكترونية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -23,14 +21,13 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Arial; 
             background: var(--bg-page); color: var(--text-color); margin: 0; padding: 20px; 
             display: flex; flex-direction: column; align-items: center; line-height: 1.6;
-            transition: background 0.5s ease, color 0.5s ease;
         }
 
         .user-header {
             width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
             display: flex; justify-content: space-between; align-items: center; text-align: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 5px solid var(--royal-blue); 
-            margin-bottom: 20px; box-sizing: border-box; gap: 15px; flex-wrap: wrap; transition: background 0.5s;
+            margin-bottom: 20px; box-sizing: border-box; gap: 15px; flex-wrap: wrap;
         }
         .header-right { flex: 1; text-align: right; min-width: 140px; }
         .header-center { flex: 0 0 auto; display: flex; justify-content: center; }
@@ -38,7 +35,7 @@
 
         .user-name { margin: 0; color: var(--royal-blue); font-weight: bold; font-size: 1.3rem; }
         .school-name { margin: 0; color: #64748b; font-weight: bold; font-size: 0.95rem; }
-        .logo-box { background: var(--royal-blue); width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.4rem; transition: background 0.5s; }
+        .logo-box { background: var(--royal-blue); width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.4rem; }
 
         .top-action-bar {
             width: 100%; max-width: 850px; background: #1e293b; border-radius: 15px; padding: 12px 20px;
@@ -47,43 +44,40 @@
         }
         .bar-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-        .array-import-box, .search-result-box {
+        .auth-card, .array-import-box, .search-result-box {
             width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box; transition: background 0.5s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box;
         }
         .array-textarea {
             width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
             font-family: monospace; font-size: 0.9rem; direction: ltr; text-align: left; outline: none; box-sizing: border-box; resize: vertical; margin-bottom: 10px;
         }
 
-        .auth-card {
-            background: var(--card-bg); width: 100%; max-width: 850px; border-radius: 20px; padding: 40px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; box-sizing: border-box; margin-bottom: 25px; transition: background 0.5s;
-        }
+        .auth-card { text-align: center; border: none; padding: 40px; }
         .auth-input { width: 80%; max-width: 400px; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; margin-bottom: 15px; text-align: center; font-size: 1.1rem; outline: none; }
 
         .container { width: 100%; max-width: 850px; padding-bottom: 120px; display: none; }
-        .question-card { background: var(--card-bg); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 2px solid var(--card-border); position: relative; text-align: right; box-sizing: border-box; transition: 0.3s, background 0.5s; }
-        .question-card::before { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 8px; background: var(--k-purple); transition: background 0.5s; }
+        .question-card { background: var(--card-bg); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 2px solid var(--card-border); position: relative; text-align: right; box-sizing: border-box; }
+        .question-card::before { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 8px; background: var(--k-purple); }
         
         .question-card.unanswered-alert { border: 2px solid var(--q-red) !important; background-color: #fff5f5; }
-        .question-card.unanswered-alert .q-number-badge { background-color: var(--q-red) !important; }
 
-        .card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .q-number-badge { background: var(--k-purple); color: white; padding: 2px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; transition: background 0.5s; }
-        .type-select { background: #f1f5f9; border: none; padding: 8px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; }
+        .card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between; }
+        .q-number-badge { background: var(--k-purple); color: white; padding: 2px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; }
+        
+        .type-select { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; color: var(--royal-blue); outline: none; }
 
         .q-text-input { 
             width: 100%; min-height: 70px; padding: 15px; border: 2px solid #cbd5e1; border-radius: 12px; 
             color: inherit; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; outline: none; 
             text-align: right; box-sizing: border-box; word-wrap: break-word; font-family: inherit; 
-            background: rgba(0,0,0,0.02); line-height: 1.8; overflow: hidden; resize: none; 
+            background: rgba(0,0,0,0.02); line-height: 1.8; resize: none; 
         }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
 
-        .opt-pair-row { display: flex; align-items: center; background: var(--card-bg); border: 1.5px solid #d1d5db; border-radius: 10px; padding: 12px; box-sizing: border-box; cursor: pointer; transition: 0.2s, background 0.5s; }
+        .opt-pair-row { display: flex; align-items: center; background: var(--card-bg); border: 1.5px solid #d1d5db; border-radius: 10px; padding: 12px; box-sizing: border-box; cursor: pointer; transition: 0.2s; }
         .opt-label { font-weight: bold; color: var(--royal-blue); margin-left: 8px; white-space: nowrap; font-size: 1.05rem; flex-shrink: 0; }
         .opt-word { width: 100%; border: none; outline: none; font-weight: bold; color: inherit; background: transparent; text-align: right; font-family: inherit; cursor: inherit; font-size: 1.05rem; }
 
@@ -101,29 +95,10 @@
         #report-modal, #cloud-modal, #history-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 700px; max-height: 85%; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 25px; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.4); }
         .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .report-table th, .report-table td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
-        
         .cloud-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e2e8f0; gap: 10px; flex-wrap: wrap; }
-        .cloud-item:hover { background: #f8fafc; }
     </style>
 </head>
 <body>
-
-    <script>
-        const themes = [
-            { bg: "#f8fafc", primary: "#1e3a8a", purple: "#7c3aed", text: "#1e293b", card: "#ffffff", border: "#e2e8f0" },
-            { bg: "#fdf4ff", primary: "#86198f", purple: "#c084fc", text: "#1e293b", card: "#ffffff", border: "#f5d0fe" },
-            { bg: "#f0fdf4", primary: "#166534", purple: "#059669", text: "#1e293b", card: "#ffffff", border: "#bbf7d0" },
-            { bg: "#fffbeb", primary: "#b45309", purple: "#d97706", text: "#1e293b", card: "#ffffff", border: "#fde68a" }
-        ];
-        const selectedTheme = themes[Math.floor(Math.random() * themes.length)];
-        const root = document.documentElement;
-        root.style.setProperty('--royal-blue', selectedTheme.primary);
-        root.style.setProperty('--k-purple', selectedTheme.purple);
-        root.style.setProperty('--bg-page', selectedTheme.bg);
-        root.style.setProperty('--text-color', selectedTheme.text);
-        root.style.setProperty('--card-bg', selectedTheme.card);
-        root.style.setProperty('--card-border', selectedTheme.border);
-    </script>
 
     <div id="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1999;" onclick="closeModals()"></div>
     
@@ -133,7 +108,6 @@
         <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق</button>
     </div>
 
-    <!-- نافذة سجل النتائج -->
     <div id="history-modal">
         <h2 style="text-align: center; color: var(--royal-blue);"><i class="fas fa-history"></i> سجل نتائج الاختبارات 📊</h2>
         <div id="history-list" style="margin-top: 20px;"></div>
@@ -153,7 +127,6 @@
         <button class="btn" style="background:#64748b; width:100%; margin-top:10px; justify-content:center;" onclick="closeModals()">إغلاق التقرير</button>
     </div>
 
-    <!-- ترويسة الدكتور سامي بن محمد العمر -->
     <div class="user-header" id="main-header">
         <div class="header-right"><h2 class="user-name">د. سامي بن محمد العمر</h2></div>
         <div class="header-center"><div class="logo-box"><i class="fas fa-graduation-cap"></i></div></div>
@@ -189,9 +162,8 @@
         </div>
     </div>
 
-    <!-- مربع استعلام ومراجعة المعلم -->
     <div class="search-result-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-search"></i> استعلام ومراجعة درجات طالب بإيميله المدرسي (خاص بالمعلم):</label>
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-search"></i> استعلام ومراجعة درجات طالب (خاص بالمعلم):</label>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <input type="email" id="teacherSearchEmail" class="auth-input" style="flex: 1; margin: 0; font-size: 1rem; padding: 10px;" placeholder="أدخل إيميل الطالب هنا sxxxxxxx@rb.moe.gov.sa">
             <button class="btn" style="background: #0284c7; padding: 10px 20px;" onclick="teacherSearchByEmail()"><i class="fas fa-search"></i> بحث ومراجعة وتعديل</button>
@@ -216,9 +188,6 @@
         let authenticatedStudentName = "";
         let currentOpenModelName = null;
 
-        const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
-
-        // إعدادات مشروع الدكتور سامي بالكامل (حتى يتحقق من الطلاب المسجلين في لوحته ويخزن النتائج لديه)
         const samyFirebaseConfig = {
           apiKey: "AIzaSyAJKKo_NfmOMA095ulSRDnwQvfHLeIz_s",
           authDomain: "samy-28452.firebaseapp.com",
@@ -232,7 +201,7 @@
 
         const samyApp = firebase.initializeApp(samyFirebaseConfig, "samyApp");
         const rtdb = samyApp.database();
-        const fsDb = samyApp.firestore(); // تم توحيد الاتصال ليكون حصرياً على سحابة الدكتور سامي
+        const fsDb = samyApp.firestore();
 
         function autoResizeTextarea(el) {
             el.style.height = 'auto';
@@ -255,18 +224,25 @@
             const isStudent = document.body.classList.contains('student-mode');
             const qTextVal = data ? (data.text || "") : "";
             const correctAnsVal = data ? (data.ans || "") : "";
+            const selectedType = data ? (data.qType || "4 خيارات") : "4 خيارات";
 
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-                    <div class="card-meta">
-                        <span class="q-number-badge"></span>
-                    </div>
-                    <i class="fas fa-times-circle remove-btn" style="color:#cbd5e1; cursor:pointer;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
+                <div class="card-meta">
+                    <span class="q-number-badge"></span>
+                    <select class="type-select" onchange="changeQuestionType(this); saveAll();">
+                        <option value="4 خيارات" ${selectedType === '4 خيارات' ? 'selected' : ''}>٤ خيارات</option>
+                        <option value="صح وخطأ" ${selectedType === 'صح وخطأ' ? 'selected' : ''}>صح وخطأ</option>
+                        <option value="ذكر" ${selectedType === 'ذكر' ? 'selected' : ''}>وذكر</option>
+                        <option value="عرف" ${selectedType === 'عرف' ? 'selected' : ''}>عرف</option>
+                        <option value="عدد" ${selectedType === 'عدد' ? 'selected' : ''}>عدد</option>
+                        <option value="صحح الخطأ" ${selectedType === 'صحح الخطأ' ? 'selected' : ''}>صحح الخطأ</option>
+                    </select>
+                    <i class="fas fa-times-circle remove-btn" style="color:#cbd5e1; cursor:pointer; font-size:1.2rem;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
                 </div>
                 <div class="q-area">
                     ${isStudent ? `<div class="q-text-input" style="cursor:default; overflow:visible; height:auto;">${qTextVal}</div>` : `<textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا...">${qTextVal}</textarea>`}
                 </div>
-                <div class="ans-grid-area">${renderOptions(data, isStudent)}</div>
+                <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
                 <div class="correct-ans-box admin-only">
                     <input type="text" placeholder="الإجابة الصحيحة" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
                 </div>
@@ -280,32 +256,54 @@
                 ta.addEventListener('input', function() { autoResizeTextarea(this); saveAll(); });
             });
 
-            card.querySelectorAll('.opt-pair-row').forEach(row => {
-                row.onclick = () => { 
-                    const examId = new URLSearchParams(window.location.search).get('exam');
-                    if (examId && localStorage.getItem('submitted_' + examId) === 'true') return;
-                    if (isStudent) { 
-                        card.classList.remove('unanswered-alert');
-                        card.querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt')); 
-                        row.classList.add('selected-opt');
-                    }
-                };
-            });
-
+            bindOptionClickEvents(card, isStudent);
             updateNumbers();
             if(!isStudent) saveAll();
         }
 
-        function renderOptions(d, isStudent) {
-            let opts = d?.opts ? [...d.opts] : ['', '', '', ''];
-            if (isStudent && opts.length > 0) opts = shuffleArray(opts);
+        function changeQuestionType(selectEl) {
+            const card = selectEl.closest('.question-card');
+            const type = selectEl.value;
+            const ansArea = card.querySelector('.ans-grid-area');
+            ansArea.innerHTML = renderOptionsByType(type, null, false);
+            bindOptionClickEvents(card, false);
+            saveAll();
+        }
 
-            let h = '<div class="options-grid">';
-            for(let i=0; i<opts.length; i++) {
-                const readonlyInput = isStudent ? 'readonly style="background:transparent; cursor:pointer;"' : '';
-                h+=`<div class="opt-pair-row"><span class="opt-label">${labels[i]}</span><input type="text" class="opt-word opt" ${readonlyInput} placeholder="خيار ${labels[i]}" value="${opts[i]||''}" oninput="saveAll()"></div>`;
+        function renderOptionsByType(type, data, isStudent) {
+            if (type === 'صح وخطأ') {
+                let opts = ['صح', 'خطأ'];
+                if (isStudent) opts = shuffleArray(opts);
+                return `<div class="options-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="opt-pair-row"><input type="text" class="opt-word opt" readonly value="${opts[0]}" style="text-align:center;"></div>
+                    <div class="opt-pair-row"><input type="text" class="opt-word opt" readonly value="${opts[1]}" style="text-align:center;"></div>
+                </div>`;
+            } else if (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(type)) {
+                return `<div style="background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #cbd5e1; text-align:center; color:#64748b; font-weight:bold;">سؤال مقالي (${type}) - يتم تقييمه أو مطابقته تلقائياً</div>`;
+            } else {
+                // افتراضي ٤ خيارات
+                let opts = data?.opts ? [...data.opts] : ['', '', '', ''];
+                const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
+                if (isStudent && opts.length > 0) opts = shuffleArray(opts);
+                let h = '<div class="options-grid">';
+                for(let i=0; i<opts.length; i++) {
+                    const readonlyInput = isStudent ? 'readonly style="background:transparent; cursor:pointer;"' : '';
+                    h+=`<div class="opt-pair-row"><span class="opt-label">${labels[i]}</span><input type="text" class="opt-word opt" ${readonlyInput} placeholder="خيار ${labels[i]}" value="${opts[i]||''}" oninput="saveAll()"></div>`;
+                }
+                return h + '</div>';
             }
-            return h + '</div>';
+        }
+
+        function bindOptionClickEvents(card, isStudent) {
+            card.querySelectorAll('.opt-pair-row').forEach(row => {
+                row.onclick = () => { 
+                    const examId = new URLSearchParams(window.location.search).get('exam');
+                    if (examId && localStorage.getItem('submitted_' + examId) === 'true') return;
+                    card.classList.remove('unanswered-alert');
+                    card.querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt')); 
+                    row.classList.add('selected-opt');
+                };
+            });
         }
 
         function importArrayQuestions() {
@@ -314,7 +312,7 @@
             try {
                 let arr = Function('"use strict"; return (' + rawData + ');')();
                 arr.forEach(item => {
-                    addQuestion({ text: item.q || "", opts: item.opts || [], ans: item.ans || "" });
+                    addQuestion({ text: item.q || "", opts: item.opts || [], ans: item.ans || "", qType: item.qType || "4 خيارات" });
                 });
                 saveAll();
                 document.getElementById('arrayInputText').value = "";
@@ -360,7 +358,6 @@
                 }
 
                 localStorage.removeItem('submitted_' + examId);
-
                 document.getElementById('student-auth-container').style.display = 'none';
                 document.querySelector('.container').style.display = 'block';
                 document.getElementById('student-actions').style.display = 'flex';
@@ -373,167 +370,17 @@
             }
         }
 
-        async function teacherSearchByEmail() {
-            const emailInput = document.getElementById('teacherSearchEmail').value.trim().toLowerCase();
-            if (!emailInput || !emailInput.includes('@')) {
-                alert("الرجاء إدخال إيميل صحيح للبحث!");
-                return;
-            }
-            fetchAndShowHistory(emailInput, true);
-        }
-
-        async function openStudentHistory() {
-            let emailToCheck = authenticatedStudentEmail || document.getElementById('studentEmailInput').value.trim().toLowerCase();
-            if (!emailToCheck) {
-                alert("الرجاء إدخال إيميلك أولاً لعرض سجلك!");
-                return;
-            }
-            fetchAndShowHistory(emailToCheck, false);
-        }
-
-        async function fetchAndShowHistory(emailToCheck, isTeacherMode) {
-            const listEl = document.getElementById('history-list');
-            listEl.innerHTML = "<p style='text-align:center; color:#64748b;'>جاري جلب النتائج... ⏳</p>";
-            document.getElementById('history-modal').style.display = 'block';
-            document.getElementById('modal-overlay').style.display = 'block';
-
-            try {
-                const querySnap = await fsDb.collection("alkfaeat_results")
-                    .where("email", "==", emailToCheck).get();
-
-                if (querySnap.empty) {
-                    listEl.innerHTML = `<p style='text-align:center; padding:20px; color:#64748b;'>لا توجد أي اختبارات مسجلة لهذا الإيميل (${emailToCheck}).</p>`;
-                    return;
-                }
-
-                listEl.innerHTML = '<div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"></div>';
-                const containerDiv = listEl.querySelector('div');
-
-                querySnap.forEach(doc => {
-                    const data = doc.data();
-                    const docId = doc.id;
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'cloud-item';
-                    
-                    const btnText = isTeacherMode ? '<i class="fas fa-edit"></i> مراجعة وتعديل وحذف' : '<i class="fas fa-file-alt"></i> استعراض التقرير';
-                    const actionFunc = isTeacherMode 
-                        ? `openEditableReport("${docId}", ${JSON.stringify(data.answers || []).replace(/'/g, "&#39;")}, ${data.score}, ${data.total})`
-                        : `showNormalReport(${JSON.stringify(data.answers || []).replace(/'/g, "&#39;")}, ${data.score}, ${data.total})`;
-
-                    itemDiv.innerHTML = `
-                        <div style="font-weight:bold; color:var(--royal-blue); text-align:right; flex:1;">طالب: ${data.name || 'مجهول'} | نموذج: ${data.model_id || 'اختبار'} | النتيجة: ${data.score} من ${data.total}</div>
-                        <button class="btn btn-save" style="padding:6px 14px;" onclick='${actionFunc}'>${btnText}</button>
-                    `;
-                    containerDiv.appendChild(itemDiv);
-                });
-            } catch (err) {
-                console.error(err);
-                listEl.innerHTML = "<p style='text-align:center; color:var(--q-red);'>حدث خطأ أثناء جلب النتائج.</p>";
-            }
-        }
-
-        function showNormalReport(answersArray, score, total) {
-            closeModals();
-            document.getElementById('report-modal-title').innerText = "تقرير أداء الطالب 🎯";
-            document.getElementById('report-table-header').innerHTML = "<th>#</th><th>السؤال</th><th>إجابتك</th><th>الصحيحة</th><th>الدرجة</th>";
-            const report = document.getElementById('report-body');
-            report.innerHTML = "";
-
-            answersArray.forEach((ans, i) => {
-                report.innerHTML += `<tr><td>${i+1}</td><td style="text-align:right">${ans.qText || ans.q}</td><td>${ans.studentAns || '--'}</td><td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td><td>${ans.isCorrect ? 1 : 0}</td></tr>`;
-            });
-
-            document.getElementById('score-summary').innerText = `النتيجة الإجمالية: ${score} من ${total}`;
-            document.getElementById('save-review-btn-container').innerHTML = "";
-            document.getElementById('report-modal').style.display = 'block';
-            document.getElementById('modal-overlay').style.display = 'block';
-        }
-
-        function openEditableReport(docId, answersArray, score, total) {
-            closeModals();
-            document.getElementById('report-modal-title').innerText = "مراجعة وتعديل درجات الطالب (خاص بالمعلم) 🎯";
-            document.getElementById('report-table-header').innerHTML = "<th>#</th><th>السؤال</th><th>إجابة الطالب</th><th>الصحيحة</th><th>الدرجة (تعديل)</th>";
-            const report = document.getElementById('report-body');
-            report.innerHTML = "";
-
-            answersArray.forEach((ans, i) => {
-                report.innerHTML += `
-                    <tr>
-                        <td>${i+1}</td>
-                        <td style="text-align:right">${ans.qText || ans.q}</td>
-                        <td>${ans.studentAns || '--'}</td>
-                        <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
-                        <td>
-                            <select class="score-edit-select" data-index="${i}" style="padding:5px; border-radius:8px; font-weight:bold; font-family:inherit;">
-                                <option value="1" ${ans.isCorrect ? 'selected' : ''}>1 (صح)</option>
-                                <option value="0" ${!ans.isCorrect ? 'selected' : ''}>0 (خطأ)</option>
-                            </select>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('score-summary').innerText = `النتيجة الإجمالية الحالية: ${score} من ${total}`;
-            
-            document.getElementById('save-review-btn-container').innerHTML = `
-                <button class="btn" style="background:#10b981; padding:12px 20px; font-size:1.1rem;" onclick="saveGradeChanges('${docId}', ${total})">
-                    <i class="fas fa-save"></i> حفظ التحديثات 💾
-                </button>
-                <button class="btn" style="background:#ef4444; padding:12px 20px; font-size:1.1rem;" onclick="deleteStudentExamRecord('${docId}')">
-                    <i class="fas fa-trash"></i> حذف سجل هذا الاختبار نهائياً (ليعيد الاختبار) 🗑️
-                </button>
-            `;
-
-            document.getElementById('report-modal').style.display = 'block';
-            document.getElementById('modal-overlay').style.display = 'block';
-        }
-
-        async function saveGradeChanges(docId, total) {
-            const selects = document.querySelectorAll('.score-edit-select');
-            let newScore = 0;
-
-            const docRef = fsDb.collection("alkfaeat_results").doc(docId);
-            const docSnap = await docRef.get();
-            if (!docSnap.exists) { alert("لم يتم العثور على سجل الطالب."); return; }
-
-            let answersArray = docSnap.data().answers || [];
-
-            selects.forEach((sel, idx) => {
-                const val = parseInt(sel.value);
-                if (val === 1) newScore++;
-                if (answersArray[idx]) {
-                    answersArray[idx].isCorrect = (val === 1);
-                }
-            });
-
-            await docRef.update({
-                score: newScore,
-                answers: answersArray
-            });
-
-            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total}`);
-            closeModals();
-        }
-
-        async function deleteStudentExamRecord(docId) {
-            if (!confirm("⚠️ تحذير: هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً من سحابة الدكتور سامي؟ سيتمكن من إعادة الاختبار من جديد.")) return;
-            try {
-                await fsDb.collection("alkfaeat_results").doc(docId).delete();
-                alert("تم حذف سجل الاختبار بنجاح، ويمكن للطالب الآن إعادة الاختبار.");
-                closeModals();
-            } catch (err) {
-                console.error(err);
-                alert("حدث خطأ أثناء محاولة حذف السجل.");
-            }
-        }
-
         async function gradeExam() {
             const cards = document.querySelectorAll('.question-card');
             let firstUnansweredIndex = -1;
 
             cards.forEach((c, index) => {
                 c.classList.remove('unanswered-alert');
-                if (!c.querySelector('.selected-opt')) {
+                const qType = c.querySelector('.type-select')?.value || "4 خيارات";
+                const hasSelected = c.querySelector('.selected-opt');
+                const textInputAns = c.querySelector('.q-main')?.value;
+
+                if (!hasSelected && !textInputAns) {
                     c.classList.add('unanswered-alert');
                     if (firstUnansweredIndex === -1) firstUnansweredIndex = index + 1;
                 }
@@ -552,6 +399,7 @@
 
             cards.forEach((c, i) => {
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
+                const qType = c.querySelector('.type-select')?.value || "4 خيارات";
                 const selWord = c.querySelector('.selected-opt .opt')?.value || "";
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
                 
@@ -560,6 +408,7 @@
 
                 details.push({
                     qText: qTxt,
+                    qType: qType,
                     studentAns: selWord,
                     correctAns: correctKey,
                     isCorrect: isCorrect
@@ -570,7 +419,7 @@
             const totalQuestions = cards.length;
 
             try {
-                // تخزين النتيجة في Realtime Database الخاصة بالدكتور سامي لتظهر في لوحة المتابعة
+                // إرسال النتيجة مع نوع السؤال لكل من Realtime Database و Firestore
                 await rtdb.ref("quran_results").push().set({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
@@ -589,7 +438,6 @@
                     }
                 });
 
-                // تخزين النتيجة في Firestore الخاصة بالدكتور سامي لمنع تكرار الاختبار وحفظ السجل
                 await fsDb.collection("alkfaeat_results").add({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
@@ -703,9 +551,12 @@
         function saveAll() { 
             const qs = []; 
             document.querySelectorAll('.question-card').forEach(c => { 
-                let d = { ans: c.querySelector('.ans-val')?.value || '' }; 
-                d.text = c.querySelector('.q-main')?.value || ""; 
-                d.opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value); 
+                let d = { 
+                    ans: c.querySelector('.ans-val')?.value || '',
+                    qType: c.querySelector('.type-select')?.value || '4 خيارات',
+                    text: c.querySelector('.q-main')?.value || "", 
+                    opts: Array.from(c.querySelectorAll('.opt')).map(i => i.value) 
+                }; 
                 qs.push(d); 
             }); 
             localStorage.setItem('samy_exam_data', JSON.stringify(qs)); 
