@@ -74,6 +74,11 @@
             background: rgba(0,0,0,0.02); line-height: 1.8; resize: none; 
         }
 
+        .student-answer-textarea {
+            width: 100%; min-height: 90px; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px;
+            font-family: inherit; font-size: 1.05rem; outline: none; box-sizing: border-box; text-align: right; background: #fff;
+        }
+
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
 
@@ -108,12 +113,14 @@
         <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق</button>
     </div>
 
+    <!-- نافذة سجل النتائج والاستعلام -->
     <div id="history-modal">
         <h2 style="text-align: center; color: var(--royal-blue);"><i class="fas fa-history"></i> سجل نتائج الاختبارات 📊</h2>
         <div id="history-list" style="margin-top: 20px;"></div>
         <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق السجل</button>
     </div>
 
+    <!-- نافذة التقرير التفصيلي والتعديل للمعلم -->
     <div id="report-modal">
         <h2 style="text-align: center; color: var(--royal-blue);" id="report-modal-title">تقرير أداء الطالب 🎯</h2>
         <div id="score-summary" style="text-align: center; font-size: 1.4rem; font-weight: bold; margin: 20px 0;"></div>
@@ -162,6 +169,7 @@
         </div>
     </div>
 
+    <!-- مربع استعلام ومراجعة المعلم -->
     <div class="search-result-box admin-only">
         <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-search"></i> استعلام ومراجعة درجات طالب (خاص بالمعلم):</label>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -244,7 +252,7 @@
                 </div>
                 <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
                 <div class="correct-ans-box admin-only">
-                    <input type="text" placeholder="الإجابة الصحيحة" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
+                    <input type="text" placeholder="الإجابة الصحيحة النموذجية" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
                 </div>
                 <input type="hidden" class="hidden-correct-ans" value="${correctAnsVal}">
                 <input type="hidden" class="hidden-q-text" value="${qTextVal}">
@@ -279,9 +287,13 @@
                     <div class="opt-pair-row"><input type="text" class="opt-word opt" readonly value="${opts[1]}" style="text-align:center;"></div>
                 </div>`;
             } else if (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(type)) {
-                return `<div style="background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #cbd5e1; text-align:center; color:#64748b; font-weight:bold;">سؤال مقالي (${type}) - يتم تقييمه أو مطابقته تلقائياً</div>`;
+                const studentVal = (isStudent && data?.studentAns) ? data.studentAns : '';
+                const readonlyAttr = isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب (سيظهر للطالب أثناء الاختبار هنا)..."';
+                return `<div>
+                    <label style="display:block; font-weight:bold; color:#0284c7; margin-bottom:5px; font-size:0.9rem;">إجابة الطالب التحريرية:</label>
+                    <textarea class="student-answer-textarea" ${readonlyAttr}>${studentVal}</textarea>
+                </div>`;
             } else {
-                // افتراضي ٤ خيارات
                 let opts = data?.opts ? [...data.opts] : ['', '', '', ''];
                 const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
                 if (isStudent && opts.length > 0) opts = shuffleArray(opts);
@@ -370,6 +382,174 @@
             }
         }
 
+        // ⭐ الدوال المسؤولة عن الاستعلام وعرض السجل والمراجعة للمعلم والطالب (تم إصلاحها بالكامل)
+        async function teacherSearchByEmail() {
+            const emailInput = document.getElementById('teacherSearchEmail').value.trim().toLowerCase();
+            if (!emailInput || !emailInput.includes('@')) {
+                alert("الرجاء إدخال إيميل صحيح للبحث!");
+                return;
+            }
+            fetchAndShowHistory(emailInput, true);
+        }
+
+        async function openStudentHistory() {
+            let emailToCheck = authenticatedStudentEmail || document.getElementById('studentEmailInput').value.trim().toLowerCase();
+            if (!emailToCheck) {
+                alert("الرجاء إدخال إيميلك أولاً لعرض سجلك!");
+                return;
+            }
+            fetchAndShowHistory(emailToCheck, false);
+        }
+
+        async function fetchAndShowHistory(emailToCheck, isTeacherMode) {
+            const listEl = document.getElementById('history-list');
+            listEl.innerHTML = "<p style='text-align:center; color:#64748b;'>جاري جلب النتائج... ⏳</p>";
+            document.getElementById('history-modal').style.display = 'block';
+            document.getElementById('modal-overlay').style.display = 'block';
+
+            try {
+                const querySnap = await fsDb.collection("alkfaeat_results")
+                    .where("email", "==", emailToCheck).get();
+
+                if (querySnap.empty) {
+                    listEl.innerHTML = `<p style='text-align:center; padding:20px; color:#64748b;'>لا توجد أي اختبارات مسجلة لهذا الإيميل (${emailToCheck}).</p>`;
+                    return;
+                }
+
+                listEl.innerHTML = '<div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"></div>';
+                const containerDiv = listEl.querySelector('div');
+
+                querySnap.forEach(doc => {
+                    const data = doc.data();
+                    const docId = doc.id;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'cloud-item';
+                    
+                    const btnText = isTeacherMode ? '<i class="fas fa-edit"></i> مراجعة وتعديل وحذف' : '<i class="fas fa-file-alt"></i> استعراض التقرير';
+                    
+                    // تحويل مصفوفة الإجابات لتمريرها بأمان
+                    const encodedAnswers = encodeURIComponent(JSON.stringify(data.answers || []));
+                    const actionFunc = isTeacherMode 
+                        ? `openEditableReport("${docId}", "${encodedAnswers}", ${data.score}, ${data.total})`
+                        : `showNormalReport("${encodedAnswers}", ${data.score}, ${data.total})`;
+
+                    itemDiv.innerHTML = `
+                        <div style="font-weight:bold; color:var(--royal-blue); text-align:right; flex:1;">طالب: ${data.name || 'مجهول'} | نموذج: ${data.model_id || 'اختبار'} | النتيجة: ${data.score} من ${data.total}</div>
+                        <button class="btn btn-save" style="padding:6px 14px;" onclick='${actionFunc}'>${btnText}</button>
+                    `;
+                    containerDiv.appendChild(itemDiv);
+                });
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = "<p style='text-align:center; color:var(--q-red);'>حدث خطأ أثناء جلب النتائج.</p>";
+            }
+        }
+
+        function showNormalReport(encodedAnswers, score, total) {
+            closeModals();
+            const answersArray = JSON.parse(decodeURIComponent(encodedAnswers));
+            document.getElementById('report-modal-title').innerText = "تقرير أداء الطالب 🎯";
+            document.getElementById('report-table-header').innerHTML = "<th>#</th><th>السؤال</th><th>نوعه</th><th>إجابتك</th><th>الصحيحة</th><th>الدرجة</th>";
+            const report = document.getElementById('report-body');
+            report.innerHTML = "";
+
+            answersArray.forEach((ans, i) => {
+                report.innerHTML += `<tr>
+                    <td>${i+1}</td>
+                    <td style="text-align:right">${ans.qText || ''}</td>
+                    <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
+                    <td>${ans.studentAns || '--'}</td>
+                    <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
+                    <td>${ans.isCorrect ? 1 : 0}</td>
+                </tr>`;
+            });
+
+            document.getElementById('score-summary').innerText = `النتيجة الإجمالية: ${score} من ${total}`;
+            document.getElementById('save-review-btn-container').innerHTML = "";
+            document.getElementById('report-modal').style.display = 'block';
+            document.getElementById('modal-overlay').style.display = 'block';
+        }
+
+        function openEditableReport(docId, encodedAnswers, score, total) {
+            closeModals();
+            const answersArray = JSON.parse(decodeURIComponent(encodedAnswers));
+            document.getElementById('report-modal-title').innerText = "مراجعة وتعديل درجات الطالب (خاص بالمعلم) 🎯";
+            document.getElementById('report-table-header').innerHTML = "<th>#</th><th>السؤال</th><th>نوعه</th><th>إجابة الطالب</th><th>الصحيحة</th><th>الدرجة (تعديل)</th>";
+            const report = document.getElementById('report-body');
+            report.innerHTML = "";
+
+            answersArray.forEach((ans, i) => {
+                report.innerHTML += `
+                    <tr>
+                        <td>${i+1}</td>
+                        <td style="text-align:right">${ans.qText || ''}</td>
+                        <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
+                        <td>${ans.studentAns || '--'}</td>
+                        <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
+                        <td>
+                            <select class="score-edit-select" data-index="${i}" style="padding:5px; border-radius:8px; font-weight:bold; font-family:inherit;">
+                                <option value="1" ${ans.isCorrect ? 'selected' : ''}>1 (صح)</option>
+                                <option value="0" ${!ans.isCorrect ? 'selected' : ''}>0 (خطأ)</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('score-summary').innerText = `النتيجة الإجمالية الحالية: ${score} من ${total}`;
+            
+            document.getElementById('save-review-btn-container').innerHTML = `
+                <button class="btn" style="background:#10b981; padding:12px 20px; font-size:1.1rem;" onclick="saveGradeChanges('${docId}', ${total})">
+                    <i class="fas fa-save"></i> حفظ التحديثات 💾
+                </button>
+                <button class="btn" style="background:#ef4444; padding:12px 20px; font-size:1.1rem;" onclick="deleteStudentExamRecord('${docId}')">
+                    <i class="fas fa-trash"></i> حذف سجل هذا الاختبار نهائياً (ليعيد الاختبار) 🗑️
+                </button>
+            `;
+
+            document.getElementById('report-modal').style.display = 'block';
+            document.getElementById('modal-overlay').style.display = 'block';
+        }
+
+        async function saveGradeChanges(docId, total) {
+            const selects = document.querySelectorAll('.score-edit-select');
+            let newScore = 0;
+
+            const docRef = fsDb.collection("alkfaeat_results").doc(docId);
+            const docSnap = await docRef.get();
+            if (!docSnap.exists) { alert("لم يتم العثور على سجل الطالب."); return; }
+
+            let answersArray = docSnap.data().answers || [];
+
+            selects.forEach((sel, idx) => {
+                const val = parseInt(sel.value);
+                if (val === 1) newScore++;
+                if (answersArray[idx]) {
+                    answersArray[idx].isCorrect = (val === 1);
+                }
+            });
+
+            await docRef.update({
+                score: newScore,
+                answers: answersArray
+            });
+
+            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total}`);
+            closeModals();
+        }
+
+        async function deleteStudentExamRecord(docId) {
+            if (!confirm("⚠️ تحذير: هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً؟ سيتمكن من إعادة الاختبار من جديد.")) return;
+            try {
+                await fsDb.collection("alkfaeat_results").doc(docId).delete();
+                alert("تم حذف سجل الاختبار بنجاح، ويمكن للطالب الآن إعادة الاختبار.");
+                closeModals();
+            } catch (err) {
+                console.error(err);
+                alert("حدث خطأ أثناء محاولة حذف السجل.");
+            }
+        }
+
         async function gradeExam() {
             const cards = document.querySelectorAll('.question-card');
             let firstUnansweredIndex = -1;
@@ -378,9 +558,10 @@
                 c.classList.remove('unanswered-alert');
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
                 const hasSelected = c.querySelector('.selected-opt');
-                const textInputAns = c.querySelector('.q-main')?.value;
+                const textAns = c.querySelector('.student-answer-textarea')?.value.trim();
 
-                if (!hasSelected && !textInputAns) {
+                if ((['4 خيارات', 'صح وخطأ'].includes(qType) && !hasSelected) || 
+                    (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(qType) && !textAns)) {
                     c.classList.add('unanswered-alert');
                     if (firstUnansweredIndex === -1) firstUnansweredIndex = index + 1;
                 }
@@ -400,10 +581,23 @@
             cards.forEach((c, i) => {
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
-                const selWord = c.querySelector('.selected-opt .opt')?.value || "";
+                
+                let selWord = "";
+                if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
+                    selWord = c.querySelector('.selected-opt .opt')?.value || "";
+                } else {
+                    selWord = c.querySelector('.student-answer-textarea')?.value.trim() || "";
+                }
+
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
                 
-                let isCorrect = (selWord.trim() === correctKey.trim());
+                let isCorrect = false;
+                if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
+                    isCorrect = (selWord.trim() === correctKey.trim());
+                } else {
+                    isCorrect = (selWord.toLowerCase() === correctKey.toLowerCase() && correctKey !== "");
+                }
+
                 if (isCorrect) score++;
 
                 details.push({
@@ -419,7 +613,6 @@
             const totalQuestions = cards.length;
 
             try {
-                // إرسال النتيجة مع نوع السؤال لكل من Realtime Database و Firestore
                 await rtdb.ref("quran_results").push().set({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
