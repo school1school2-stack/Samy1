@@ -48,7 +48,7 @@
         }
         .bar-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-        .array-import-box, .search-result-box {
+        .array-import-box {
             width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box; transition: background 0.5s;
         }
@@ -74,8 +74,6 @@
         .q-number-badge { background: var(--k-purple); color: white; padding: 2px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; transition: background 0.5s; }
         .type-select { background: #f1f5f9; border: none; padding: 8px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; }
 
-        .estieab-box { background: #fff9c4 !important; border: 2px solid #fbc02d; border-radius: 12px; padding: 15px; margin-bottom: 15px; color: #000; font-weight: bold; line-height: 1.8; width: 100%; box-sizing: border-box; text-align: right; min-height: 90px; outline: none; white-space: pre-wrap; font-size: 1.15rem; }
-
         .q-text-input { 
             width: 100%; min-height: 70px; padding: 15px; border: 2px solid #cbd5e1; border-radius: 12px; 
             color: inherit; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; outline: none; 
@@ -98,10 +96,10 @@
         .btn-link { background: #06b6d4; } .btn-del { background: #ef4444; } .btn-rename { background: #f59e0b; }
         .btn-clear { background: #64748b; padding: 8px; border-radius: 50%; }
 
-        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only { display: none !important; }
+        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only { display: none !important; }
         body.student-mode .selected-opt { background: rgba(59, 130, 246, 0.2) !important; border: 2px solid var(--royal-blue) !important; }
 
-        #report-modal, #cloud-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 700px; max-height: 85%; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 25px; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.4); }
+        #cloud-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 700px; max-height: 85%; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 25px; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.4); }
         .cloud-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e2e8f0; gap: 10px; flex-wrap: wrap; }
         .cloud-item:hover { background: #f8fafc; }
     </style>
@@ -158,10 +156,10 @@
     <div id="student-auth-container" style="display:none;">
         <div class="auth-card">
             <h2 style="color: var(--royal-blue); margin-top: 0;">تسجيل دخول الطالب 🎓</h2>
-            <p style="color: #64748b; margin-bottom: 20px;">الرجاء إدخال اسمك الكامل أو إيميلك لبدء الاختبار:</p>
-            <input type="text" id="studentNameInput" class="auth-input" placeholder="اكتب اسمك الثلاثي هنا">
+            <p style="color: #64748b; margin-bottom: 20px;">الرجاء إدخال إيميل منصة مدرستي المعتمد لبدء الاختبار:</p>
+            <input type="email" id="studentEmailInput" class="auth-input" placeholder="sxxxxxxx@rb.moe.gov.sa">
             <br>
-            <button class="btn" style="background: var(--success-green); padding: 12px 30px; font-size: 1.1rem; margin: auto;" onclick="startStudentExam()">دخول الاختبار 🚀</button>
+            <button class="btn" style="background: var(--success-green); padding: 12px 30px; font-size: 1.1rem; margin: auto;" onclick="verifyStudentEmail()">دخول المنصة 🚀</button>
             <p id="auth-status-msg" style="margin-top: 15px; font-weight: bold;"></p>
         </div>
     </div>
@@ -179,16 +177,13 @@
     </div>
 
     <script>
-        let studentFullName = "";
+        let authenticatedStudentEmail = "";
+        let authenticatedStudentName = "";
         let currentOpenModelName = null;
 
-        const typeMap = {
-            'k_multi': 'اختر من متعدد',
-            'k_true': 'صح وخطأ'
-        };
         const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
 
-        // إعدادات سحابة د. سامي المستخرجة من لوحة المتابعة الخاصة به (صورة إعدادات Firebase)
+        // إعدادات سحابة د. سامي المستخرجة من لوحة المتابعة
         const samyFirebaseConfig = {
           apiKey: "AIzaSyAJKKo_NfmOMA095ulSRDnwQvfHLeIz_s",
           authDomain: "samy-28452.firebaseapp.com",
@@ -200,9 +195,18 @@
           measurementId: "G-M0BB8TTD91"
         };
 
-        firebase.initializeApp(samyFirebaseConfig);
-        const database = firebase.database();
-        const resultsRef = database.ref("quran_results"); // نفس مسار استقبال النتائج في لوحة د. سامي
+        // إعدادات سحابة الطلاب المسجلين والتحقق (السجل المشترك)
+        const abdulazizFirebaseConfig = {
+            apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
+            authDomain: "aztlg-494c3.firebaseapp.com",
+            projectId: "aztlg-494c3"
+        };
+
+        const samyApp = firebase.initializeApp(samyFirebaseConfig, "samyApp");
+        const abdulazizApp = firebase.initializeApp(abdulazizFirebaseConfig, "abdulazizApp");
+
+        const rtdb = samyApp.database(); // Realtime DB للنماذج ولوحة متابعة د. سامي
+        const fsDb = abdulazizApp.firestore(); // Firestore للتحقق من إيميلات الطلاب
 
         function autoResizeTextarea(el) {
             el.style.height = 'auto';
@@ -220,7 +224,6 @@
         function addQuestion(data = null) {
             const container = document.getElementById('quiz-content');
             const card = document.createElement('div');
-            const type = data ? data.type : 'k_multi';
             card.className = `question-card`;
 
             const isStudent = document.body.classList.contains('student-mode');
@@ -231,16 +234,13 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
                     <div class="card-meta">
                         <span class="q-number-badge"></span>
-                        <select class="type-select" ${isStudent ? 'disabled' : ''}>
-                            <option value="k_multi">اختر من متعدد</option>
-                        </select>
                     </div>
                     <i class="fas fa-times-circle remove-btn" style="color:#cbd5e1; cursor:pointer;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
                 </div>
                 <div class="q-area">
                     ${isStudent ? `<div class="q-text-input" style="cursor:default; overflow:visible; height:auto;">${qTextVal}</div>` : `<textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا...">${qTextVal}</textarea>`}
                 </div>
-                <div class="ans-grid-area">${renderOptions(type, data, isStudent)}</div>
+                <div class="ans-grid-area">${renderOptions(data, isStudent)}</div>
                 <div class="correct-ans-box admin-only">
                     <input type="text" placeholder="الإجابة الصحيحة" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
                 </div>
@@ -270,7 +270,7 @@
             if(!isStudent) saveAll();
         }
 
-        function renderOptions(t, d, isStudent) {
+        function renderOptions(d, isStudent) {
             let opts = d?.opts ? [...d.opts] : ['', '', '', ''];
             if (isStudent && opts.length > 0) opts = shuffleArray(opts);
 
@@ -288,7 +288,7 @@
             try {
                 let arr = Function('"use strict"; return (' + rawData + ');')();
                 arr.forEach(item => {
-                    addQuestion({ type: 'k_multi', text: item.q || "", opts: item.opts || [], ans: item.ans || "" });
+                    addQuestion({ text: item.q || "", opts: item.opts || [], ans: item.ans || "" });
                 });
                 saveAll();
                 document.getElementById('arrayInputText').value = "";
@@ -298,17 +298,40 @@
             }
         }
 
-        function startStudentExam() {
-            const nameInput = document.getElementById('studentNameInput').value.trim();
-            if (!nameInput) {
-                alert("الرجاء إدخال اسمك الكريم.");
+        async function verifyStudentEmail() {
+            const emailInput = document.getElementById('studentEmailInput').value.trim().toLowerCase();
+            const msgEl = document.getElementById('auth-status-msg');
+
+            if (!emailInput || !emailInput.includes('@')) {
+                msgEl.style.color = "var(--q-red)";
+                msgEl.innerText = "الرجاء إدخال إيميل منصة مدرستي صحيح.";
                 return;
             }
-            studentFullName = nameInput;
-            document.getElementById('student-auth-container').style.display = 'none';
-            document.querySelector('.container').style.display = 'block';
-            document.getElementById('student-actions').style.display = 'flex';
-            alert(`أهلاً بك يا ${studentFullName} 🌟. بالتوفيق في الاختبار.`);
+
+            msgEl.style.color = "var(--royal-blue)";
+            msgEl.innerText = "جاري التحقق من السجل المدرسي... ⏳";
+
+            try {
+                const docRef = await fsDb.collection("allowed_students").doc(emailInput).get();
+                if (!docRef.exists) {
+                    msgEl.style.color = "var(--q-red)";
+                    msgEl.innerText = "❌ هذا الإيميل غير مسجل في قائمة طلاب المدرسة المعتمدين!";
+                    return;
+                }
+
+                authenticatedStudentEmail = emailInput;
+                authenticatedStudentName = docRef.data().name || "طالب";
+
+                document.getElementById('student-auth-container').style.display = 'none';
+                document.querySelector('.container').style.display = 'block';
+                document.getElementById('student-actions').style.display = 'flex';
+
+                alert(`أهلاً بك يا ${authenticatedStudentName} 🌟. يمكنك البدء في حل الاختبار.`);
+            } catch (err) {
+                console.error(err);
+                msgEl.style.color = "var(--q-red)";
+                msgEl.innerText = "حدث خطأ في الاتصال بقاعدة البيانات. حاول مرة أخرى.";
+            }
         }
 
         async function gradeExam() {
@@ -350,20 +373,20 @@
                 });
             });
 
-            const examId = new URLSearchParams(window.location.search).get('exam') || "نموذج عام";
+            const examId = new URLSearchParams(window.location.search).get('exam') || "اختبار عام";
             const totalQuestions = cards.length;
 
-            // إرسال النتيجة مباشرة إلى قاعدة بيانات لوحة د. سامي (Realtime Database) لتظهر في لوحته فوراً[cite: 1]
+            // إرسال النتيجة مباشرة إلى مسار quran_results في سحابة د. سامي لتظهر في لوحة المتابعة فوراً[cite: 1]
             try {
-                const newResultRef = resultsRef.push();
+                const newResultRef = rtdb.ref("quran_results").push();
                 await newResultRef.set({
-                    name: studentFullName,
+                    name: authenticatedStudentName,
+                    email: authenticatedStudentEmail,
                     score: score,
                     total: totalQuestions,
                     model_id: examId,
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     answers: details,
-                    // تقديرات المهارات المتوافقة مع لوحة د. سامي الذكية[cite: 1]
                     sections: {
                         est: Math.round((score / totalQuestions) * 100),
                         ikm: Math.round((score / totalQuestions) * 100),
@@ -388,7 +411,7 @@
         }
 
         function loadFromCloud() {
-            database.ref('models').once('value', snapshot => {
+            rtdb.ref('models').once('value', snapshot => {
                 const ms = snapshot.val();
                 const listContainer = document.getElementById('cloud-models-list');
                 listContainer.innerHTML = "";
@@ -409,7 +432,7 @@
         }
 
         async function openModel(name) {
-            const snap = await database.ref('models/' + name).once('value');
+            const snap = await rtdb.ref('models/' + name).once('value');
             if (snap.val() && snap.val().data) {
                 currentOpenModelName = name;
                 document.getElementById('current-model-label').innerText = `📁 ${name}`;
@@ -430,10 +453,10 @@
             if (!currentOpenModelName) return;
             const newName = prompt("اسم النموذج الجديد:", currentOpenModelName);
             if (!newName || newName === currentOpenModelName) return;
-            const snap = await database.ref('models/' + currentOpenModelName).once('value');
+            const snap = await rtdb.ref('models/' + currentOpenModelName).once('value');
             if (snap.exists()) {
-                await database.ref('models/' + newName).set(snap.val());
-                await database.ref('models/' + currentOpenModelName).remove();
+                await rtdb.ref('models/' + newName).set(snap.val());
+                await rtdb.ref('models/' + currentOpenModelName).remove();
                 currentOpenModelName = newName;
                 document.getElementById('current-model-label').innerText = `📁 ${newName}`;
                 alert("تم التعديل بنجاح!");
@@ -442,7 +465,7 @@
 
         async function deleteCurrentModel() {
             if (!currentOpenModelName || !confirm("هل أنت متأكد من الحذف؟")) return;
-            await database.ref('models/' + currentOpenModelName).remove();
+            await rtdb.ref('models/' + currentOpenModelName).remove();
             currentOpenModelName = null;
             document.getElementById('current-model-label').innerText = "📁 نموذج جديد";
             clearAll();
@@ -457,7 +480,7 @@
                 document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
             }
             const dataToSave = JSON.parse(localStorage.getItem('samy_exam_data') || '[]');
-            await database.ref('models/' + currentOpenModelName).set({
+            await rtdb.ref('models/' + modelName).set({
                 teacher: "د. سامي بن محمد العمر",
                 data: dataToSave,
                 date: new Date().toLocaleString()
@@ -475,7 +498,7 @@
         function saveAll() { 
             const qs = []; 
             document.querySelectorAll('.question-card').forEach(c => { 
-                let d = { type: 'k_multi', ans: c.querySelector('.ans-val')?.value || '' }; 
+                let d = { ans: c.querySelector('.ans-val')?.value || '' }; 
                 d.text = c.querySelector('.q-main')?.value || ""; 
                 d.opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value); 
                 qs.push(d); 
@@ -488,7 +511,7 @@
             if (id) { 
                 document.body.classList.add('student-mode'); 
                 document.getElementById('student-auth-container').style.display = 'block';
-                database.ref('models/' + id).once('value', s => { 
+                rtdb.ref('models/' + id).once('value', s => { 
                     if (s.val() && s.val().data) {
                         shuffleArray([...s.val().data]).forEach(q => addQuestion(q));
                     } else {
