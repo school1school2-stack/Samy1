@@ -82,8 +82,6 @@
             background: rgba(0,0,0,0.02); line-height: 1.8; overflow: hidden; resize: none; 
         }
 
-        .essay-input { width: 100%; min-height: 70px; padding: 12px; border: 2px inset #e2e8f0; border-radius: 12px; background: rgba(0,0,0,0.02); font-weight: bold; color: inherit; margin-top: 10px; outline: none; text-align: right; font-size: 1.1rem; }
-
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
 
@@ -137,7 +135,7 @@
         <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق</button>
     </div>
 
-    <!-- نافذة سجل النتائج والاستعراض -->
+    <!-- نافذة سجل النتائج -->
     <div id="history-modal">
         <h2 style="text-align: center; color: var(--royal-blue);"><i class="fas fa-history"></i> سجل نتائج الاختبارات 📊</h2>
         <div id="history-list" style="margin-top: 20px;"></div>
@@ -153,7 +151,7 @@
             </thead>
             <tbody id="report-body"></tbody>
         </table>
-        <div id="save-review-btn-container" style="margin-top: 20px; text-align: center;"></div>
+        <div id="save-review-btn-container" style="margin-top: 20px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"></div>
         <button class="btn" style="background:#64748b; width:100%; margin-top:10px; justify-content:center;" onclick="closeModals()">إغلاق التقرير</button>
     </div>
 
@@ -222,7 +220,6 @@
 
         const labels = ['أ) ', 'ب) ', 'ج) ', 'د) '];
 
-        // إعدادات سحابة د. سامي لإدارة النماذج واستقبال النتائج على اللوحة
         const samyFirebaseConfig = {
           apiKey: "AIzaSyAJKKo_NfmOMA095ulSRDnwQvfHLeIz_s",
           authDomain: "samy-28452.firebaseapp.com",
@@ -234,7 +231,6 @@
           measurementId: "G-M0BB8TTD91"
         };
 
-        // إعدادات السجل المشترك للتحقق من الطلاب وسجلاتهم
         const firestoreConfig = {
             apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
             authDomain: "aztlg-494c3.firebaseapp.com",
@@ -244,8 +240,8 @@
         const samyApp = firebase.initializeApp(samyFirebaseConfig, "samyApp");
         const secondaryApp = firebase.initializeApp(firestoreConfig, "secondaryApp");
 
-        const rtdb = samyApp.database(); // Realtime DB للنماذج ولوحة د. سامي
-        const fsDb = secondaryApp.firestore(); // Firestore للتحقق وسجلات الطلاب والتعديل
+        const rtdb = samyApp.database();
+        const fsDb = secondaryApp.firestore();
 
         function autoResizeTextarea(el) {
             el.style.height = 'auto';
@@ -386,7 +382,6 @@
             }
         }
 
-        // استعلام المعلم بالإيميل مع إمكانية تعديل الدرجات
         async function teacherSearchByEmail() {
             const emailInput = document.getElementById('teacherSearchEmail').value.trim().toLowerCase();
             if (!emailInput || !emailInput.includes('@')) {
@@ -396,7 +391,6 @@
             fetchAndShowHistory(emailInput, true);
         }
 
-        // استعراض سجل الطالب لاختباراته السابقة
         async function openStudentHistory() {
             let emailToCheck = authenticatedStudentEmail || document.getElementById('studentEmailInput').value.trim().toLowerCase();
             if (!emailToCheck) {
@@ -430,7 +424,7 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'cloud-item';
                     
-                    const btnText = isTeacherMode ? '<i class="fas fa-edit"></i> مراجعة وتعديل الدرجات' : '<i class="fas fa-file-alt"></i> استعراض التقرير';
+                    const btnText = isTeacherMode ? '<i class="fas fa-edit"></i> مراجعة وتعديل وحذف' : '<i class="fas fa-file-alt"></i> استعراض التقرير';
                     const actionFunc = isTeacherMode 
                         ? `openEditableReport("${docId}", ${JSON.stringify(data.answers || []).replace(/'/g, "&#39;")}, ${data.score}, ${data.total})`
                         : `showNormalReport(${JSON.stringify(data.answers || []).replace(/'/g, "&#39;")}, ${data.score}, ${data.total})`;
@@ -464,7 +458,7 @@
             document.getElementById('modal-overlay').style.display = 'block';
         }
 
-        // نافذة تعديل الدرجات للمعلم (نفس الموجودة في كودك)
+        // نافذة المعلم للتعديل أو الحذف النهائي للاختبار
         function openEditableReport(docId, answersArray, score, total) {
             closeModals();
             document.getElementById('report-modal-title').innerText = "مراجعة وتعديل درجات الطالب (خاص بالمعلم) 🎯";
@@ -490,9 +484,14 @@
             });
 
             document.getElementById('score-summary').innerText = `النتيجة الإجمالية الحالية: ${score} من ${total}`;
+            
+            // إضافة زري الحفظ والتحديث + زر الحذف النهائي لاختبار الطالب ليتمكن من الإعادة
             document.getElementById('save-review-btn-container').innerHTML = `
-                <button class="btn" style="background:#10b981; padding:12px 30px; font-size:1.1rem; margin:auto;" onclick="saveGradeChanges('${docId}', ${total})">
-                    <i class="fas fa-save"></i> حفظ وتحديث درجة الطالب في سجله 💾
+                <button class="btn" style="background:#10b981; padding:12px 20px; font-size:1.1rem;" onclick="saveGradeChanges('${docId}', ${total})">
+                    <i class="fas fa-save"></i> حفظ التحديثات 💾
+                </button>
+                <button class="btn" style="background:#ef4444; padding:12px 20px; font-size:1.1rem;" onclick="deleteStudentExamRecord('${docId}')">
+                    <i class="fas fa-trash"></i> حذف سجل هذا الاختبار نهائياً (ليعيد الاختبار) 🗑️
                 </button>
             `;
 
@@ -525,6 +524,19 @@
 
             alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total}`);
             closeModals();
+        }
+
+        // دالة الحذف النهائي لسجل اختبار الطالب ليتمكن من إعادته
+        async function deleteStudentExamRecord(docId) {
+            if (!confirm("⚠️ تحذير: هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً؟ سيتمكن من إعادة الاختبار من جديد.")) return;
+            try {
+                await fsDb.collection("alkfaeat_results").doc(docId).delete();
+                alert("تم حذف سجل الاختبار بنجاح، ويمكن للطالب الآن إعادة الاختبار.");
+                closeModals();
+            } catch (err) {
+                console.error(err);
+                alert("حدث خطأ أثناء محاولة حذف السجل.");
+            }
         }
 
         async function gradeExam() {
@@ -569,7 +581,6 @@
             const examId = new URLSearchParams(window.location.search).get('exam') || "اختبار عام";
             const totalQuestions = cards.length;
 
-            // إرسال النتيجة إلى سحابة د. سامي (Realtime Database) لتظهر في لوحته الفورية[cite: 1]
             try {
                 await rtdb.ref("quran_results").push().set({
                     name: authenticatedStudentName,
@@ -589,7 +600,6 @@
                     }
                 });
 
-                // حفظها أيضاً في سجل الفايرستور لتمكين الطالب من مراجعتها لاحقاً
                 await fsDb.collection("alkfaeat_results").add({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
@@ -736,6 +746,7 @@
                 localStorage.removeItem('samy_exam_data');
                 currentOpenModelName = null;
                 document.getElementById('current-model-label').innerText = "📁 نموذج جديد";
+                clearAll();
             }
         }
 
