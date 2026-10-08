@@ -502,6 +502,12 @@
                         mappedType = itemType;
                     }
 
+                    // حساب درجة السؤال الإجمالية من درجات الفقرات الفرعية إن وُجدت
+                    let calcScore = item.score !== undefined ? item.score : 1;
+                    if ((mappedType === 'مزاوجة' || mappedType === 'عددّد') && Array.isArray(item.subScores) && item.subScores.length > 0) {
+                        calcScore = item.subScores.reduce((a, b) => (parseInt(a) || 0) + (parseInt(b) || 0), 0);
+                    }
+
                     addQuestion({ 
                         text: item.q || "", 
                         opts: item.opts || [], 
@@ -509,7 +515,7 @@
                         subScores: item.subScores || [],
                         ans: item.ans || "", 
                         qType: mappedType,
-                        score: item.score || 1
+                        score: calcScore
                     });
                 });
                 saveAll();
@@ -764,7 +770,7 @@
             } catch (err) { alert("حدث خطأ أثناء الحذف."); }
         }
 
-        // --- التعديل الجوهري: دالة احتساب وتصحيح الاختبار بالكامل بالفقرات ---
+        // --- دالة احتساب وتصحيح الاختبار بالكامل وبدقة شاملة للدرجات الفرعية ---
         async function gradeExam() {
             const cards = document.querySelectorAll('.question-card');
             let firstUnansweredIndex = -1;
@@ -806,7 +812,6 @@
             let totalPossibleScore = 0;
             let details = [];
 
-            // تجميع درجات الأقسام السبعة للرسم البياني بشكل منفصل ودقيق
             let sectionTotals = { mcq: { earned: 0, max: 0 }, def: { earned: 0, max: 0 }, num: { earned: 0, max: 0 }, men: { earned: 0, max: 0 }, mat: { earned: 0, max: 0 }, tf: { earned: 0, max: 0 }, cor: { earned: 0, max: 0 } };
 
             cards.forEach((c) => {
@@ -833,7 +838,6 @@
                     let questionMaxScore = 0;
                     let questionEarned = 0;
 
-                    // احتساب كل فقرة بشكل فردي
                     leftRowsInputs.forEach((inp, i) => {
                         let subScore = parseInt(inp.value) || 1;
                         questionMaxScore += subScore;
@@ -870,7 +874,6 @@
                     let questionMaxScore = 0;
                     let questionEarned = 0;
 
-                    // احتساب كل عنصر تعداد بشكل فردي
                     enumSubScores.forEach((inp, i) => {
                         let subScore = parseInt(inp.value) || 1;
                         questionMaxScore += subScore;
@@ -926,7 +929,6 @@
                 }
             });
 
-            // حساب النسب المئوية الدقيقة لكل أداء قسم
             let calcSections = {};
             Object.keys(sectionTotals).forEach(k => {
                 let m = sectionTotals[k].max;
@@ -1046,11 +1048,12 @@
             clearAll();
         }
 
+        // --- التعديل: حفظ مباشر في السحابة بدون طلب اسم جديد إذا كان هناك نموذج مفتوح بالفعل ---
         async function saveToCloud() {
             let modelName = currentOpenModelName;
             if (!modelName) {
                 modelName = prompt("أدخل اسم النموذج لحفظه في السحابة:");
-                if (!modelName) return;
+                if (!modelName || !modelName.trim()) return;
                 currentOpenModelName = modelName.trim();
                 document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
             }
@@ -1060,6 +1063,7 @@
                 data: dataToSave,
                 date: new Date().toLocaleString()
             });
+            alert(`تم حفظ النموذج (${currentOpenModelName}) في السحابة بنجاح! 💾`);
         }
 
         function closeModals() { 
@@ -1071,6 +1075,7 @@
 
         function updateNumbers() { document.querySelectorAll('.q-number-badge').forEach((b, i) => b.innerText = `السؤال ${i+1}`); }
         
+        // --- دالة حفظ وطريقة التخزين الشاملة لجميع الدرجات والفقرات ---
         function saveAll() { 
             const qs = []; 
             document.querySelectorAll('.question-card').forEach(c => { 
@@ -1078,14 +1083,19 @@
                 let opts = [];
                 let rightOpts = [];
                 let subScores = [];
+                let calculatedTotalScore = parseInt(c.querySelector('.q-score-input')?.value) || 1;
 
                 if (qType === 'مزاوجة') {
                     c.querySelectorAll('.opt-left').forEach(i => opts.push(i.value));
                     c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
                     c.querySelectorAll('.opt-right').forEach(i => rightOpts.push(i.value));
+                    // حساب مجموع الفقرات الفرعية للمزاوجة تلقائياً
+                    calculatedTotalScore = subScores.reduce((a, b) => a + b, 0);
                 } else if (qType === 'عددّد') {
                     c.querySelectorAll('.enum-label-input').forEach(i => opts.push(i.value));
                     c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
+                    // حساب مجموع الفقرات الفرعية للتعداد تلقائياً
+                    calculatedTotalScore = subScores.reduce((a, b) => a + b, 0);
                 } else {
                     opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value);
                 }
@@ -1097,7 +1107,7 @@
                     opts: opts,
                     rightOpts: rightOpts,
                     subScores: subScores,
-                    score: parseInt(c.querySelector('.q-score-input')?.value) || 1
+                    score: calculatedTotalScore
                 }; 
                 qs.push(d); 
             }); 
