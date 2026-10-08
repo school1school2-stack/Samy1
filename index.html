@@ -84,7 +84,8 @@
         @media (max-width: 768px) { .matching-container { grid-template-columns: 1fr; } }
         .matching-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; box-sizing: border-box; }
         .matching-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
-        .matching-row input[type="text"] { flex: 1; min-width: 120px; }
+        .matching-row input[type="text"] { flex: 1; min-width: 100px; }
+        .matching-row input[type="number"] { width: 50px; text-align: center; padding: 6px; border: 1px solid #10b981; border-radius: 6px; font-weight: bold; color: #166534; }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
@@ -93,8 +94,8 @@
         .opt-label { font-weight: bold; color: var(--royal-blue); margin-left: 8px; white-space: nowrap; font-size: 1.05rem; flex-shrink: 0; }
         .opt-word { width: 100%; border: none; outline: none; font-weight: bold; color: inherit; background: transparent; text-align: right; font-family: inherit; cursor: inherit; font-size: 1.05rem; }
 
-        .correct-ans-box { margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid #bbf7d0; text-align: right; box-sizing: border-box; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .correct-input { flex: 1; background: transparent; border: none; outline: none; color: #166534; font-weight: bold; text-align: right; font-family: inherit; box-sizing: border-box; }
+        .correct-ans-box { margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid #bbf7d0; text-align: right; box-sizing: border-box; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+        .correct-input { flex: 1; background: transparent; border: none; outline: none; color: #166534; font-weight: bold; text-align: right; font-family: inherit; box-sizing: border-box; min-width: 200px; }
         .q-score-input { width: 70px; padding: 5px; border: 1px solid #10b981; border-radius: 6px; text-align: center; font-weight: bold; color: #166534; font-family: inherit; }
 
         .btn { border: none; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; gap: 6px; transition: 0.3s; font-family: inherit; font-size: 0.85rem; white-space: nowrap; }
@@ -102,7 +103,7 @@
         .btn-link { background: #06b6d4; } .btn-del { background: #ef4444; } .btn-rename { background: #f59e0b; } .btn-new { background: #10b981; }
         .btn-clear { background: #64748b; padding: 8px; border-radius: 50%; }
 
-        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only, body.student-mode .matching-controls { display: none !important; }
+        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only, body.student-mode .matching-controls, body.student-mode .sub-score-field { display: none !important; }
         body.student-mode .selected-opt { background: rgba(59, 130, 246, 0.2) !important; border: 2px solid var(--royal-blue) !important; }
 
         #report-modal, #cloud-modal, #history-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 700px; max-height: 85%; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 20px; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.4); box-sizing: border-box; }
@@ -285,9 +286,9 @@
                 <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
                 <div class="correct-ans-box admin-only">
                     <input type="text" placeholder="الإجابة الصحيحة (لمزاوجة اكتب الأرقام بمسافات مثل: 5 3 2 4 1)" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
-                    <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+                    <div class="single-score-container" style="display:${selectedType === 'مزاوجة' ? 'none' : 'flex'}; align-items:center; gap:5px; white-space:nowrap;">
                         <span style="font-size:0.85rem; font-weight:bold; color:#166534;">درجة السؤال:</span>
-                        <input type="number" min="1" class="q-score-input" value="${qScoreVal}" oninput="saveAll()" title="درجة هذا السؤال الكلية">
+                        <input type="number" min="1" class="q-score-input" value="${qScoreVal}" oninput="saveAll()" title="درجة السؤال الكلية">
                     </div>
                 </div>
                 <input type="hidden" class="hidden-correct-ans" value="${correctAnsVal}">
@@ -310,6 +311,13 @@
             const type = selectEl.value;
             const ansArea = card.querySelector('.ans-grid-area');
             ansArea.innerHTML = renderOptionsByType(type, null, false);
+            
+            // إظهار أو إخفاء صندوق الدرجة الموحدة بحسب نوع السؤال
+            const singleScoreDiv = card.querySelector('.single-score-container');
+            if(singleScoreDiv) {
+                singleScoreDiv.style.display = (type === 'مزاوجة') ? 'none' : 'flex';
+            }
+
             bindOptionClickEvents(card, false);
             saveAll();
         }
@@ -326,13 +334,16 @@
                 let leftOpts = data?.opts ? data.opts : ['', ''];
                 let rightOpts = data?.rightOpts ? data.rightOpts : ['', ''];
                 let studentAns = data?.studentAns || {};
+                let subScores = data?.subScores || leftOpts.map(() => 1);
 
-                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول):</h4>`;
+                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول مع درجة كل فقرة):</h4>`;
                 leftOpts.forEach((item, idx) => {
                     let sVal = studentAns[idx] || '';
+                    let subScoreVal = subScores[idx] !== undefined ? subScores[idx] : 1;
                     leftHtml += `<div class="matching-row">
                         ${!isStudent ? `<input type="text" class="opt opt-left" value="${item}" placeholder="فقرة ${idx+1}" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">${idx+1})${item}</span>`}
-                        <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:55px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
+                        ${!isStudent ? `<input type="number" min="0" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذه الفقرة">` : ``}
+                        <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:50px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
                     </div>`;
                 });
                 if(!isStudent) {
@@ -383,19 +394,21 @@
             const card = btn.closest('.question-card');
             let leftOpts = [];
             let rightOpts = [];
+            let subScores = [];
             card.querySelectorAll('.opt-left').forEach(i => leftOpts.push(i.value));
+            card.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
             card.querySelectorAll('.opt-right').forEach(i => rightOpts.push(i.value));
 
             if (side === 'left') {
-                if (change > 1 || change === 1) leftOpts.push('');
-                else if (change === -1 && leftOpts.length > 1) leftOpts.pop();
+                if (change > 1 || change === 1) { leftOpts.push(''); subScores.push(1); }
+                else if (change === -1 && leftOpts.length > 1) { leftOpts.pop(); subScores.pop(); }
             } else {
                 if (change > 1 || change === 1) rightOpts.push('');
                 else if (change === -1 && rightOpts.length > 1) rightOpts.pop();
             }
 
             const ansArea = card.querySelector('.ans-grid-area');
-            ansArea.innerHTML = renderOptionsByType('مزاوجة', { opts: leftOpts, rightOpts: rightOpts }, false);
+            ansArea.innerHTML = renderOptionsByType('مزاوجة', { opts: leftOpts, rightOpts: rightOpts, subScores: subScores }, false);
             saveAll();
         }
 
@@ -447,6 +460,7 @@
                         text: item.q || "", 
                         opts: item.opts || [], 
                         rightOpts: item.rightOpts || [],
+                        subScores: item.subScores || [],
                         ans: item.ans || "", 
                         qType: mappedType,
                         score: item.score || 1
@@ -736,7 +750,6 @@
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
-                const questionMaxScore = parseInt(c.querySelector('.q-score-input')?.value) || 1;
 
                 if (qType === 'مزاوجة') {
                     let studentMatching = {};
@@ -745,22 +758,22 @@
                     });
 
                     let correctArr = correctKey.split(/\s+/);
-                    let leftRowsCount = c.querySelectorAll('.opt-left').length;
-                    
-                    totalPossibleScore += questionMaxScore;
-
-                    // توزيع درجة السؤال الكلية على عدد الفقرات بالتساوي (أو حسب رغبتك لكل فقرة جزء)
-                    let scorePerSubItem = leftRowsCount > 0 ? (questionMaxScore / leftRowsCount) : 0;
+                    let leftRowsInputs = c.querySelectorAll('.sub-score-input');
+                    let questionMaxScore = 0;
                     let questionEarned = 0;
 
-                    for (let i = 0; i < leftRowsCount; i++) {
+                    leftRowsInputs.forEach((inp, i) => {
+                        let subScore = parseInt(inp.value) || 1;
+                        questionMaxScore += subScore;
+                        totalPossibleScore += subScore;
+
                         let studentVal = (studentMatching[i] || "").toString().trim();
                         let correctVal = (correctArr[i] || "").toString().trim();
 
                         if (correctVal !== "" && studentVal === correctVal) {
-                            questionEarned += scorePerSubItem;
+                            questionEarned += subScore;
                         }
-                    }
+                    });
 
                     totalScore += questionEarned;
                     details.push({
@@ -773,6 +786,7 @@
                         isCorrect: questionEarned === questionMaxScore
                     });
                 } else {
+                    const questionMaxScore = parseInt(c.querySelector('.q-score-input')?.value) || 1;
                     totalPossibleScore += questionMaxScore;
                     let selWord = "";
                     let isCorrect = false;
@@ -952,9 +966,11 @@
                 const qType = c.querySelector('.type-select')?.value || '4 خيارات';
                 let opts = [];
                 let rightOpts = [];
+                let subScores = [];
 
                 if (qType === 'مزاوجة') {
                     c.querySelectorAll('.opt-left').forEach(i => opts.push(i.value));
+                    c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
                     c.querySelectorAll('.opt-right').forEach(i => rightOpts.push(i.value));
                 } else {
                     opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value);
@@ -966,6 +982,7 @@
                     text: c.querySelector('.q-main')?.value || "", 
                     opts: opts,
                     rightOpts: rightOpts,
+                    subScores: subScores,
                     score: parseInt(c.querySelector('.q-score-input')?.value) || 1
                 }; 
                 qs.push(d); 
