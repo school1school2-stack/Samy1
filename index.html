@@ -273,9 +273,9 @@
                         <option value="4 خيارات" ${selectedType === '4 خيارات' ? 'selected' : ''}>٤ خيارات</option>
                         <option value="صح وخطأ" ${selectedType === 'صح وخطأ' ? 'selected' : ''}>صح وخطأ</option>
                         <option value="مزاوجة" ${selectedType === 'مزاوجة' ? 'selected' : ''}>سؤال مزاوجة (توصيل)</option>
-                        <option value="ذكر" ${selectedType === 'ذكر' ? 'selected' : ''}>وذكر</option>
-                        <option value="عرف" ${selectedType === 'عرف' ? 'selected' : ''}>عرف</option>
-                        <option value="عدد" ${selectedType === 'عدد' ? 'selected' : ''}>عدد</option>
+                        <option value="عرّف" ${selectedType === 'عرّف' ? 'selected' : ''}>عرّف</option>
+                        <option value="عددّد" ${selectedType === 'عددّد' ? 'selected' : ''}>عددّد</option>
+                        <option value="اذكر" ${selectedType === 'اذكر' ? 'selected' : ''}>اذكر</option>
                         <option value="صحح الخطأ" ${selectedType === 'صحح الخطأ' ? 'selected' : ''}>صحح الخطأ</option>
                     </select>
                     <i class="fas fa-times-circle remove-btn" style="color:#cbd5e1; cursor:pointer; font-size:1.2rem;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
@@ -312,7 +312,6 @@
             const ansArea = card.querySelector('.ans-grid-area');
             ansArea.innerHTML = renderOptionsByType(type, null, false);
             
-            // إظهار أو إخفاء صندوق الدرجة الموحدة بحسب نوع السؤال
             const singleScoreDiv = card.querySelector('.single-score-container');
             if(singleScoreDiv) {
                 singleScoreDiv.style.display = (type === 'مزاوجة') ? 'none' : 'flex';
@@ -370,7 +369,7 @@
                 rightHtml += '</div>';
 
                 return `<div class="matching-container">${leftHtml}${rightHtml}</div>`;
-            } else if (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(type)) {
+            } else if (['عرّف', 'عددّد', 'اذكر', 'صحح الخطأ'].includes(type)) {
                 const studentVal = (isStudent && data?.studentAns) ? data.studentAns : '';
                 const readonlyAttr = isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب (سيظهر للطالب أثناء الاختبار هنا)..."';
                 return `<div>
@@ -452,7 +451,7 @@
                         mappedType = "صح وخطأ";
                     } else if (itemType.includes("مزاوجة") || itemType.includes("توصيل")) {
                         mappedType = "مزاوجة";
-                    } else if (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(itemType)) {
+                    } else if (['عرّف', 'عددّد', 'اذكر', 'صحح الخطأ'].includes(itemType)) {
                         mappedType = itemType;
                     }
 
@@ -727,7 +726,7 @@
                 }
 
                 if ((['4 خيارات', 'صح وخطأ'].includes(qType) && !hasSelected) || 
-                    (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(qType) && !textAns) ||
+                    (['عرّف', 'عددّد', 'اذكر', 'صحح الخطأ'].includes(qType) && !textAns) ||
                     (qType === 'مزاوجة' && !isMatchingFilled)) {
                     c.classList.add('unanswered-alert');
                     if (firstUnansweredIndex === -1) firstUnansweredIndex = index + 1;
