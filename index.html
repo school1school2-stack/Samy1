@@ -342,7 +342,7 @@
                 leftOpts.forEach((item, idx) => {
                     let sVal = studentAns[idx] || '';
                     let subScoreVal = subScores[idx] !== undefined ? subScores[idx] : 1;
-                    leftHtml += `<div class="matching-row">
+                    leftHtml += `<div class="matching-row" data-subscore="${subScoreVal}">
                         ${!isStudent ? `<input type="text" class="opt opt-left" value="${item}" placeholder="فقرة ${idx+1}" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">${idx+1})${item}</span>`}
                         ${!isStudent ? `<input type="number" min="1" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذه الفقرة">` : ``}
                         <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:50px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
@@ -383,7 +383,7 @@
                 enumItems.forEach((item, idx) => {
                     let sVal = studentAns[idx] || '';
                     let subScoreVal = subScores[idx] !== undefined ? subScores[idx] : 1;
-                    html += `<div class="enum-row" style="margin-bottom:10px;">
+                    html += `<div class="enum-row" data-subscore="${subScoreVal}" style="margin-bottom:10px;">
                         <span style="font-weight:bold; color:#0284c7; width:20px;">${idx+1}.</span>
                         ${!isStudent ? `<input type="text" class="enum-label-input" value="${item}" placeholder="عنوان العنصر أو اتركه فارغاً" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">عنصر ${idx+1}</span>`}
                         ${!isStudent ? `<input type="number" min="1" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذا العنصر">` : ``}
@@ -502,7 +502,6 @@
                         mappedType = itemType;
                     }
 
-                    // حساب درجة السؤال الإجمالية من درجات الفقرات الفرعية إن وُجدت
                     let calcScore = item.score !== undefined ? item.score : 1;
                     if ((mappedType === 'مزاوجة' || mappedType === 'عددّد') && Array.isArray(item.subScores) && item.subScores.length > 0) {
                         calcScore = item.subScores.reduce((a, b) => (parseInt(a) || 0) + (parseInt(b) || 0), 0);
@@ -770,7 +769,7 @@
             } catch (err) { alert("حدث خطأ أثناء الحذف."); }
         }
 
-        // --- دالة احتساب وتصحيح الاختبار بالكامل وبدقة شاملة للدرجات الفرعية ---
+        // --- دالة التصحيح الشاملة والمعدلة جذرياً لقراءة كل الدرجات حتى في وضع الطالب ---
         async function gradeExam() {
             const cards = document.querySelectorAll('.question-card');
             let firstUnansweredIndex = -1;
@@ -834,12 +833,13 @@
                     });
 
                     let correctArr = correctKey.split(/\s+/);
-                    let leftRowsInputs = c.querySelectorAll('.sub-score-input');
+                    let leftRows = c.querySelectorAll('.matching-row[data-subscore]');
                     let questionMaxScore = 0;
                     let questionEarned = 0;
 
-                    leftRowsInputs.forEach((inp, i) => {
-                        let subScore = parseInt(inp.value) || 1;
+                    leftRows.forEach((row, i) => {
+                        let subInput = row.querySelector('.sub-score-input');
+                        let subScore = subInput ? (parseInt(subInput.value) || 1) : (parseInt(row.dataset.subscore) || 1);
                         questionMaxScore += subScore;
                         totalPossibleScore += subScore;
 
@@ -870,12 +870,13 @@
                         studentEnum[inp.dataset.enumIdx] = inp.value.trim();
                     });
 
-                    let enumSubScores = c.querySelectorAll('.sub-score-input');
+                    let enumRows = c.querySelectorAll('.enum-row[data-subscore]');
                     let questionMaxScore = 0;
                     let questionEarned = 0;
 
-                    enumSubScores.forEach((inp, i) => {
-                        let subScore = parseInt(inp.value) || 1;
+                    enumRows.forEach((row, i) => {
+                        let subInput = row.querySelector('.sub-score-input');
+                        let subScore = subInput ? (parseInt(subInput.value) || 1) : (parseInt(row.dataset.subscore) || 1);
                         questionMaxScore += subScore;
                         totalPossibleScore += subScore;
 
@@ -1048,7 +1049,6 @@
             clearAll();
         }
 
-        // --- التعديل: حفظ مباشر في السحابة بدون طلب اسم جديد إذا كان هناك نموذج مفتوح بالفعل ---
         async function saveToCloud() {
             let modelName = currentOpenModelName;
             if (!modelName) {
@@ -1075,7 +1075,6 @@
 
         function updateNumbers() { document.querySelectorAll('.q-number-badge').forEach((b, i) => b.innerText = `السؤال ${i+1}`); }
         
-        // --- دالة حفظ وطريقة التخزين الشاملة لجميع الدرجات والفقرات ---
         function saveAll() { 
             const qs = []; 
             document.querySelectorAll('.question-card').forEach(c => { 
@@ -1089,12 +1088,10 @@
                     c.querySelectorAll('.opt-left').forEach(i => opts.push(i.value));
                     c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
                     c.querySelectorAll('.opt-right').forEach(i => rightOpts.push(i.value));
-                    // حساب مجموع الفقرات الفرعية للمزاوجة تلقائياً
                     calculatedTotalScore = subScores.reduce((a, b) => a + b, 0);
                 } else if (qType === 'عددّد') {
                     c.querySelectorAll('.enum-label-input').forEach(i => opts.push(i.value));
                     c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
-                    // حساب مجموع الفقرات الفرعية للتعداد تلقائياً
                     calculatedTotalScore = subScores.reduce((a, b) => a + b, 0);
                 } else {
                     opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value);
