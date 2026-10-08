@@ -91,7 +91,7 @@
 
         .btn { border: none; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; gap: 6px; transition: 0.3s; font-family: inherit; font-size: 0.85rem; white-space: nowrap; }
         .btn-add { background: #3b82f6; } .btn-save { background: #a855f7; } .btn-load { background: #4f46e5; }
-        .btn-link { background: #06b6d4; } .btn-del { background: #ef4444; } .btn-rename { background: #f59e0b; }
+        .btn-link { background: #06b6d4; } .btn-del { background: #ef4444; } .btn-rename { background: #f59e0b; } .btn-new { background: #10b981; }
         .btn-clear { background: #64748b; padding: 8px; border-radius: 50%; }
 
         body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only { display: none !important; }
@@ -113,14 +113,12 @@
         <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق</button>
     </div>
 
-    <!-- نافذة سجل النتائج والاستعلام -->
     <div id="history-modal">
         <h2 style="text-align: center; color: var(--royal-blue);"><i class="fas fa-history"></i> سجل نتائج الاختبارات 📊</h2>
         <div id="history-list" style="margin-top: 20px;"></div>
         <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق السجل</button>
     </div>
 
-    <!-- نافذة التقرير التفصيلي والتعديل للمعلم -->
     <div id="report-modal">
         <h2 style="text-align: center; color: var(--royal-blue);" id="report-modal-title">تقرير أداء الطالب 🎯</h2>
         <div id="score-summary" style="text-align: center; font-size: 1.4rem; font-weight: bold; margin: 20px 0;"></div>
@@ -143,6 +141,7 @@
     <div class="top-action-bar admin-only" id="admin-top-bar">
         <div class="bar-group">
             <span id="current-model-label" style="color: #38bdf8; font-weight: bold; font-size: 0.95rem; margin-left: 5px;">📁 نموذج جديد</span>
+            <button class="btn btn-new" onclick="createNewModelPrompt()"><i class="fas fa-plus-circle"></i> نموذج جديد</button>
             <button class="btn btn-save" onclick="saveToCloud()"><i class="fas fa-save"></i> حفظ</button>
             <button class="btn btn-link" onclick="copyCurrentModelLink()"><i class="fas fa-link"></i> رابط الطلاب</button>
             <button class="btn btn-rename" onclick="renameCurrentModel()"><i class="fas fa-signature"></i> إعادة تسمية</button>
@@ -169,7 +168,6 @@
         </div>
     </div>
 
-    <!-- مربع استعلام ومراجعة المعلم -->
     <div class="search-result-box admin-only">
         <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-search"></i> استعلام ومراجعة درجات طالب (خاص بالمعلم):</label>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -222,6 +220,18 @@
                 [array[i], array[j]] = [array[j], array[i]];
             }
             return array;
+        }
+
+        // ⭐ زر نموذج جديد مع طلب تسمية النموذج قبل البدء
+        function createNewModelPrompt() {
+            const modelName = prompt("أدخل اسم النموذج الجديد قبل البدء:");
+            if (!modelName || !modelName.trim()) return;
+            currentOpenModelName = modelName.trim();
+            document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
+            document.getElementById('quiz-content').innerHTML = '';
+            localStorage.removeItem('samy_exam_data');
+            addQuestion();
+            alert(`تم إنشاء النموذج (${currentOpenModelName}) بنجاح. أضف أسئلتك ثم اضغط حفظ.`);
         }
 
         function addQuestion(data = null) {
@@ -508,7 +518,6 @@
             document.getElementById('modal-overlay').style.display = 'block';
         }
 
-        // ⭐ دالة تحديث الحفظ المحدثة لتنعكس الدرجة فوراً في لوحة التحكم (Realtime DB و Firestore)
         async function saveGradeChanges(docId, total) {
             const selects = document.querySelectorAll('.score-edit-select');
             let newScore = 0;
@@ -530,13 +539,11 @@
                 }
             });
 
-            // 1. تحديث النتيجة في Cloud Firestore
             await docRef.update({
                 score: newScore,
                 answers: answersArray
             });
 
-            // 2. تحديث النتيجة في Realtime Database لتظهر فوراً في لوحة التحكم الرئيسية
             try {
                 const rtdbQuery = await rtdb.ref("quran_results").orderByChild("email").equalTo(studentEmail).once('value');
                 rtdbQuery.forEach(childSnap => {
@@ -560,7 +567,7 @@
                 console.error("خطأ في تحديث Realtime Database:", err);
             }
 
-            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total} وتم تحديثها في اللوحة والسحابة.`);
+            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total}`);
             closeModals();
         }
 
@@ -680,6 +687,7 @@
             }
         }
 
+        // ⭐ نافذة فتح النماذج مع إضافة زر لحذف النموذج كامل مباشرة من السحابة
         function loadFromCloud() {
             rtdb.ref('models').once('value', snapshot => {
                 const ms = snapshot.val();
@@ -692,7 +700,10 @@
                         listContainer.innerHTML += `
                             <div class="cloud-item">
                                 <div style="font-weight:bold; color:var(--royal-blue);">${name}</div>
-                                <button class="btn btn-save" style="padding:6px 14px;" onclick="openModel('${name}')">فتح</button>
+                                <div style="display:flex; gap:8px;">
+                                    <button class="btn btn-save" style="padding:6px 14px;" onclick="openModel('${name}')">فتح</button>
+                                    <button class="btn btn-del" style="padding:6px 14px;" onclick="deleteEntireCloudModel('${name}')">حذف النموذج كامل</button>
+                                </div>
                             </div>`;
                     });
                 }
@@ -711,6 +722,18 @@
                 snap.val().data.forEach(q => addQuestion(q));
                 closeModals();
             }
+        }
+
+        async function deleteEntireCloudModel(name) {
+            if (!confirm(`⚠️ تحذير: هل أنت متأكد من حذف النموذج (${name}) كاملاً من السحابة؟`)) return;
+            await rtdb.ref('models/' + name).remove();
+            if (currentOpenModelName === name) {
+                currentOpenModelName = null;
+                document.getElementById('current-model-label').innerText = "📁 نموذج جديد";
+                clearAll();
+            }
+            loadFromCloud();
+            alert("تم حذف النموذج من السحابة بنجاح!");
         }
 
         function copyCurrentModelLink() {
@@ -741,6 +764,7 @@
             clearAll();
         }
 
+        // ⭐ زر الحفظ التلقائي في النموذج المفتوح حالياً دون طلب اسم جديد إذا كان مسجلاً
         async function saveToCloud() {
             let modelName = currentOpenModelName;
             if (!modelName) {
@@ -755,7 +779,7 @@
                 data: dataToSave,
                 date: new Date().toLocaleString()
             });
-            alert("تم الحفظ بنجاح في سحابة د. سامي! 💾");
+            alert(`تم حفظ التعديلات بنجاح في النموذج (${modelName})! 💾`);
         }
 
         function closeModals() { 
