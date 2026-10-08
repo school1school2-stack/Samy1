@@ -93,8 +93,9 @@
         .opt-label { font-weight: bold; color: var(--royal-blue); margin-left: 8px; white-space: nowrap; font-size: 1.05rem; flex-shrink: 0; }
         .opt-word { width: 100%; border: none; outline: none; font-weight: bold; color: inherit; background: transparent; text-align: right; font-family: inherit; cursor: inherit; font-size: 1.05rem; }
 
-        .correct-ans-box { margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid #bbf7d0; text-align: right; box-sizing: border-box; }
-        .correct-input { width: 100%; background: transparent; border: none; outline: none; color: #166534; font-weight: bold; text-align: right; font-family: inherit; box-sizing: border-box; }
+        .correct-ans-box { margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid #bbf7d0; text-align: right; box-sizing: border-box; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .correct-input { flex: 1; background: transparent; border: none; outline: none; color: #166534; font-weight: bold; text-align: right; font-family: inherit; box-sizing: border-box; }
+        .q-score-input { width: 70px; padding: 5px; border: 1px solid #10b981; border-radius: 6px; text-align: center; font-weight: bold; color: #166534; font-family: inherit; }
 
         .btn { border: none; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; gap: 6px; transition: 0.3s; font-family: inherit; font-size: 0.85rem; white-space: nowrap; }
         .btn-add { background: #3b82f6; } .btn-save { background: #a855f7; } .btn-load { background: #4f46e5; }
@@ -235,7 +236,7 @@
                 let parts = [];
                 Object.keys(ansVal).sort((a,b)=>a-b).forEach(k => {
                     let fNum = parseInt(k) + 1;
-                    parts.push(`فقرة ${fNum} $\leftarrow$ إجابة ${ansVal[k]}`);
+                    parts.push(`فقرة ${fNum} ← إجابة ${ansVal[k]}`);
                 });
                 return parts.join(' | ');
             }
@@ -262,6 +263,7 @@
             const qTextVal = data ? (data.text || "") : "";
             const correctAnsVal = data ? (data.ans || "") : "";
             const selectedType = data ? (data.qType || "4 خيارات") : "4 خيارات";
+            const qScoreVal = data && data.score !== undefined ? data.score : 1;
 
             card.innerHTML = `
                 <div class="card-meta">
@@ -283,6 +285,10 @@
                 <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
                 <div class="correct-ans-box admin-only">
                     <input type="text" placeholder="الإجابة الصحيحة (لمزاوجة اكتب الأرقام بمسافات مثل: 5 3 2 4 1)" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
+                    <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+                        <span style="font-size:0.85rem; font-weight:bold; color:#166534;">درجة السؤال:</span>
+                        <input type="number" min="1" class="q-score-input" value="${qScoreVal}" oninput="saveAll()" title="درجة هذا السؤال الكلية">
+                    </div>
                 </div>
                 <input type="hidden" class="hidden-correct-ans" value="${correctAnsVal}">
                 <input type="hidden" class="hidden-q-text" value="${qTextVal}">
@@ -321,7 +327,7 @@
                 let rightOpts = data?.rightOpts ? data.rightOpts : ['', ''];
                 let studentAns = data?.studentAns || {};
 
-                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول - كل فقرة بدرجة مستقلة):</h4>`;
+                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول):</h4>`;
                 leftOpts.forEach((item, idx) => {
                     let sVal = studentAns[idx] || '';
                     leftHtml += `<div class="matching-row">
@@ -331,7 +337,7 @@
                 });
                 if(!isStudent) {
                     leftHtml += `<div class="matching-controls" style="margin-top:10px; display:flex; gap:8px;">
-                        <button type="button" class="btn" style="background:#3b82f6; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', 1)">+ إضافة فقرة (درجة إضافية)</button>
+                        <button type="button" class="btn" style="background:#3b82f6; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', 1)">+ إضافة فقرة</button>
                         <button type="button" class="btn" style="background:#ef4444; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', -1)">- حذف فقرة</button>
                     </div>`;
                 }
@@ -442,7 +448,8 @@
                         opts: item.opts || [], 
                         rightOpts: item.rightOpts || [],
                         ans: item.ans || "", 
-                        qType: mappedType 
+                        qType: mappedType,
+                        score: item.score || 1
                     });
                 });
                 saveAll();
@@ -551,7 +558,7 @@
                         : `showNormalReport("${encodedAnswers}", ${data.score}, ${data.total})`;
 
                     itemDiv.innerHTML = `
-                        <div style="font-weight:bold; color:var(--royal-blue); text-align:right; flex:1; font-size:0.9rem;">طالب: ${data.name || 'مجهول'} | نموذج: ${data.model_id || 'اختبار'} | النتيجة: ${data.score} من ${data.total}</div>
+                        <div style="font-weight:bold; color:var(--royal-blue); text-align:right; flex:1; font-size:0.95rem;">طالب: ${data.name || 'مجهول'} | نموذج: ${data.model_id || 'اختبار'} | النتيجة: ${data.score} من ${data.total}</div>
                         <button class="btn btn-save" style="padding:6px 12px;" onclick='${actionFunc}'>${btnText}</button>
                     `;
                     containerDiv.appendChild(itemDiv);
@@ -572,13 +579,14 @@
 
             answersArray.forEach((ans, i) => {
                 let formattedAns = ans.qType === 'مزاوجة' ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
+                let earned = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? ans.maxScore : 0);
                 report.innerHTML += `<tr>
                     <td>${i+1}</td>
                     <td style="text-align:right">${ans.qText || ''}</td>
                     <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
                     <td style="text-align:right">${formattedAns}</td>
                     <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
-                    <td>${ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? 1 : 0)}</td>
+                    <td>${earned} من ${ans.maxScore}</td>
                 </tr>`;
             });
 
@@ -598,7 +606,7 @@
 
             answersArray.forEach((ans, i) => {
                 const maxS = ans.maxScore || 1;
-                const earnedS = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? 1 : 0);
+                const earnedS = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? maxS : 0);
                 let formattedAns = ans.qType === 'مزاوجة' ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 report.innerHTML += `
                     <tr>
@@ -608,7 +616,7 @@
                         <td style="text-align:right">${formattedAns}</td>
                         <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
                         <td>
-                            <input type="number" min="0" max="${maxS}" class="score-edit-input" data-index="${i}" value="${earnedS}" style="width:50px; text-align:center; padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;"> (من ${maxS})
+                            <input type="number" min="0" max="${maxS}" class="score-edit-input" data-index="${i}" value="${earnedS}" style="width:55px; text-align:center; padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;"> (من ${maxS})
                         </td>
                     </tr>
                 `;
@@ -647,7 +655,7 @@
                 newScore += val;
                 if (answersArray[idx]) {
                     answersArray[idx].earnedScore = val;
-                    answersArray[idx].isCorrect = (val > 0);
+                    answersArray[idx].isCorrect = (val === answersArray[idx].maxScore);
                 }
             });
 
@@ -728,6 +736,7 @@
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
+                const questionMaxScore = parseInt(c.querySelector('.q-score-input')?.value) || 1;
 
                 if (qType === 'مزاوجة') {
                     let studentMatching = {};
@@ -737,15 +746,19 @@
 
                     let correctArr = correctKey.split(/\s+/);
                     let leftRowsCount = c.querySelectorAll('.opt-left').length;
+                    
+                    totalPossibleScore += questionMaxScore;
+
+                    // توزيع درجة السؤال الكلية على عدد الفقرات بالتساوي (أو حسب رغبتك لكل فقرة جزء)
+                    let scorePerSubItem = leftRowsCount > 0 ? (questionMaxScore / leftRowsCount) : 0;
                     let questionEarned = 0;
 
                     for (let i = 0; i < leftRowsCount; i++) {
-                        totalPossibleScore++;
                         let studentVal = (studentMatching[i] || "").toString().trim();
                         let correctVal = (correctArr[i] || "").toString().trim();
 
                         if (correctVal !== "" && studentVal === correctVal) {
-                            questionEarned++;
+                            questionEarned += scorePerSubItem;
                         }
                     }
 
@@ -755,12 +768,12 @@
                         qType: qType,
                         studentAns: studentMatching,
                         correctAns: correctKey,
-                        maxScore: leftRowsCount,
+                        maxScore: questionMaxScore,
                         earnedScore: questionEarned,
-                        isCorrect: questionEarned === leftRowsCount
+                        isCorrect: questionEarned === questionMaxScore
                     });
                 } else {
-                    totalPossibleScore++;
+                    totalPossibleScore += questionMaxScore;
                     let selWord = "";
                     let isCorrect = false;
 
@@ -772,7 +785,7 @@
                         isCorrect = (selWord.toLowerCase() === correctKey.toLowerCase() && correctKey !== "");
                     }
 
-                    let earned = isCorrect ? 1 : 0;
+                    let earned = isCorrect ? questionMaxScore : 0;
                     totalScore += earned;
 
                     details.push({
@@ -780,7 +793,7 @@
                         qType: qType,
                         studentAns: selWord,
                         correctAns: correctKey,
-                        maxScore: 1,
+                        maxScore: questionMaxScore,
                         earnedScore: earned,
                         isCorrect: isCorrect
                     });
@@ -952,7 +965,8 @@
                     qType: qType,
                     text: c.querySelector('.q-main')?.value || "", 
                     opts: opts,
-                    rightOpts: rightOpts
+                    rightOpts: rightOpts,
+                    score: parseInt(c.querySelector('.q-score-input')?.value) || 1
                 }; 
                 qs.push(d); 
             }); 
