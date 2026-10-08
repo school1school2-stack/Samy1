@@ -80,7 +80,6 @@
             font-family: inherit; font-size: 1.05rem; outline: none; box-sizing: border-box; text-align: right; background: #fff;
         }
 
-        /* تنسيق المزاوجة المتجاوب بالكامل للأيباد والجوال والكمبيوتر */
         .matching-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
         @media (max-width: 768px) { .matching-container { grid-template-columns: 1fr; } }
         .matching-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; box-sizing: border-box; }
@@ -309,7 +308,7 @@
                 let rightOpts = data?.rightOpts ? data.rightOpts : ['', ''];
                 let studentAns = data?.studentAns || {};
 
-                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول):</h4>`;
+                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول - كل فقرة بدرجة مستقلة):</h4>`;
                 leftOpts.forEach((item, idx) => {
                     let sVal = studentAns[idx] || '';
                     leftHtml += `<div class="matching-row">
@@ -319,7 +318,7 @@
                 });
                 if(!isStudent) {
                     leftHtml += `<div class="matching-controls" style="margin-top:10px; display:flex; gap:8px;">
-                        <button type="button" class="btn" style="background:#3b82f6; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', 1)">+ إضافة فقرة</button>
+                        <button type="button" class="btn" style="background:#3b82f6; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', 1)">+ إضافة فقرة (درجة إضافية)</button>
                         <button type="button" class="btn" style="background:#ef4444; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', -1)">- حذف فقرة</button>
                     </div>`;
                 }
@@ -361,7 +360,6 @@
             }
         }
 
-        // تحكم ديناميكي بزيادة أو نقص صفوف المزاوجة للمعلم
         function adjustMatchingRows(btn, side, change) {
             const card = btn.closest('.question-card');
             let leftOpts = [];
@@ -566,7 +564,7 @@
                     <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
                     <td>${typeof ans.studentAns === 'object' ? JSON.stringify(ans.studentAns) : (ans.studentAns || '--')}</td>
                     <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
-                    <td>${ans.isCorrect ? 1 : 0}</td>
+                    <td>${ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? 1 : 0)}</td>
                 </tr>`;
             });
 
@@ -585,6 +583,8 @@
             report.innerHTML = "";
 
             answersArray.forEach((ans, i) => {
+                const maxS = ans.maxScore || 1;
+                const earnedS = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? 1 : 0);
                 report.innerHTML += `
                     <tr>
                         <td>${i+1}</td>
@@ -593,10 +593,7 @@
                         <td>${typeof ans.studentAns === 'object' ? JSON.stringify(ans.studentAns) : (ans.studentAns || '--')}</td>
                         <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
                         <td>
-                            <select class="score-edit-select" data-index="${i}" style="padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;">
-                                <option value="1" ${ans.isCorrect ? 'selected' : ''}>1 (صح)</option>
-                                <option value="0" ${!ans.isCorrect ? 'selected' : ''}>0 (خطأ)</option>
-                            </select>
+                            <input type="number" min="0" max="${maxS}" class="score-edit-input" data-index="${i}" value="${earnedS}" style="width:50px; text-align:center; padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;"> (من ${maxS})
                         </td>
                     </tr>
                 `;
@@ -618,7 +615,7 @@
         }
 
         async function saveGradeChanges(docId, total) {
-            const selects = document.querySelectorAll('.score-edit-select');
+            const inputs = document.querySelectorAll('.score-edit-input');
             let newScore = 0;
 
             const docRef = fsDb.collection("alkfaeat_results").doc(docId);
@@ -630,11 +627,12 @@
             const studentEmail = studentData.email;
             const modelId = studentData.model_id;
 
-            selects.forEach((sel, idx) => {
-                const val = parseInt(sel.value);
-                if (val === 1) newScore++;
+            inputs.forEach((inp, idx) => {
+                const val = parseInt(inp.value) || 0;
+                newScore += val;
                 if (answersArray[idx]) {
-                    answersArray[idx].isCorrect = (val === 1);
+                    answersArray[idx].earnedScore = val;
+                    answersArray[idx].isCorrect = (val > 0);
                 }
             });
 
@@ -707,79 +705,98 @@
 
             if (!confirm("هل أنت متأكد من إرسال الاعتماد النهائي لدرجتك؟")) return;
 
-            let score = 0;
+            let totalScore = 0;
+            let totalPossibleScore = 0;
             let details = [];
 
-            cards.forEach((c, i) => {
+            cards.forEach((c) => {
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
-                
-                let selWord = "";
-                let isCorrect = false;
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
 
-                if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
-                    selWord = c.querySelector('.selected-opt .opt')?.value || "";
-                    isCorrect = (selWord.trim() === correctKey.trim());
-                } else if (qType === 'مزاوجة') {
+                if (qType === 'مزاوجة') {
                     let studentMatching = {};
                     c.querySelectorAll('.matching-ans-input').forEach(inp => {
                         studentMatching[inp.dataset.leftIdx] = inp.value.trim();
                     });
-                    selWord = studentMatching;
-                    
-                    isCorrect = true; 
+
                     let correctObj = {};
                     try { correctObj = JSON.parse(correctKey); } catch(e) {}
-                    
-                    Object.keys(studentMatching).forEach(k => {
-                        if (correctObj[k] && correctObj[k].toString().trim() !== studentMatching[k].toString().trim()) {
-                            isCorrect = false;
+
+                    let leftRowsCount = c.querySelectorAll('.opt-left').length;
+                    let questionEarned = 0;
+
+                    for (let i = 0; i < leftRowsCount; i++) {
+                        totalPossibleScore++;
+                        if (correctObj[i] && correctObj[i].toString().trim() === (studentMatching[i] || "").toString().trim()) {
+                            questionEarned++;
                         }
+                    }
+
+                    totalScore += questionEarned;
+                    details.push({
+                        qText: qTxt,
+                        qType: qType,
+                        studentAns: studentMatching,
+                        correctAns: correctKey,
+                        maxScore: leftRowsCount,
+                        earnedScore: questionEarned,
+                        isCorrect: questionEarned === leftRowsCount
                     });
                 } else {
-                    selWord = c.querySelector('.student-answer-textarea')?.value.trim() || "";
-                    isCorrect = (selWord.toLowerCase() === correctKey.toLowerCase() && correctKey !== "");
+                    totalPossibleScore++;
+                    let selWord = "";
+                    let isCorrect = false;
+
+                    if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
+                        selWord = c.querySelector('.selected-opt .opt')?.value || "";
+                        isCorrect = (selWord.trim() === correctKey.trim());
+                    } else {
+                        selWord = c.querySelector('.student-answer-textarea')?.value.trim() || "";
+                        isCorrect = (selWord.toLowerCase() === correctKey.toLowerCase() && correctKey !== "");
+                    }
+
+                    let earned = isCorrect ? 1 : 0;
+                    totalScore += earned;
+
+                    details.push({
+                        qText: qTxt,
+                        qType: qType,
+                        studentAns: selWord,
+                        correctAns: correctKey,
+                        maxScore: 1,
+                        earnedScore: earned,
+                        isCorrect: isCorrect
+                    });
                 }
-
-                if (isCorrect) score++;
-
-                details.push({
-                    qText: qTxt,
-                    qType: qType,
-                    studentAns: selWord,
-                    correctAns: correctKey,
-                    isCorrect: isCorrect
-                });
             });
 
             const examId = new URLSearchParams(window.location.search).get('exam') || "اختبار عام";
-            const totalQuestions = cards.length;
 
             try {
                 await rtdb.ref("quran_results").push().set({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
-                    score: score,
-                    total: totalQuestions,
+                    score: totalScore,
+                    total: totalPossibleScore,
                     model_id: examId,
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     answers: details,
                     sections: {
-                        est: Math.round((score / totalQuestions) * 100),
-                        ikm: Math.round((score / totalQuestions) * 100),
-                        swh: Math.round((score / totalQuestions) * 100),
-                        arb: Math.round((score / totalQuestions) * 100),
-                        sah: Math.round((score / totalQuestions) * 100),
-                        math: Math.round((score / totalQuestions) * 100)
+                        est: Math.round((totalScore / totalPossibleScore) * 100),
+                        ikm: Math.round((totalScore / totalPossibleScore) * 100),
+                        swh: Math.round((totalScore / totalPossibleScore) * 100),
+                        arb: Math.round((totalScore / totalPossibleScore) * 100),
+                        sah: Math.round((totalScore / totalPossibleScore) * 100),
+                        math: Math.round((totalScore / totalPossibleScore) * 100)
                     }
                 });
 
                 await fsDb.collection("alkfaeat_results").add({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
-                    score: score,
-                    total: totalQuestions,
+                    score: totalScore,
+                    total: totalPossibleScore,
                     model_id: examId,
                     answers: details,
                     time: firebase.firestore.FieldValue.serverTimestamp()
@@ -789,7 +806,7 @@
                 document.getElementById('student-actions').innerHTML = `
                     <div style="background:#dcfce7; color:#166534; padding:20px; border-radius:12px; font-weight:bold; border:1px solid #bbf7d0; width:100%; text-align:center; font-size: 1.1rem;">
                         🎉 تم إرسال واعتماد النتيجة بنجاح!<br>
-                        درجتك: ${score} من ${totalQuestions}
+                        درجتك الإجمالية: ${totalScore} من ${totalPossibleScore}
                     </div>
                 `;
             } catch (err) {
