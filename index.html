@@ -152,7 +152,7 @@
         <div class="bar-group">
             <span id="current-model-label" style="color: #38bdf8; font-weight: bold; font-size: 0.9rem; margin-left: 5px;">📁 نموذج جديد</span>
             <button class="btn btn-new" onclick="createNewModelPrompt()"><i class="fas fa-plus-circle"></i> نموذج</button>
-            <button class="btn btn-save" onclick="saveToCloud()"><i class="fas fa-save"></i> حفظ</button>
+            <button class="btn btn-save" onclick="saveToCloud()"><i class="fas fa-save"></i> حفظ يدوي</button>
             <button class="btn btn-link" onclick="copyCurrentModelLink()"><i class="fas fa-link"></i> الرابط</button>
             <button class="btn btn-rename" onclick="renameCurrentModel()"><i class="fas fa-signature"></i> إعادة تسمية</button>
             <button class="btn btn-del" onclick="deleteCurrentModel()"><i class="fas fa-trash"></i> حذف</button>
@@ -253,7 +253,7 @@
             document.getElementById('quiz-content').innerHTML = '';
             localStorage.removeItem('samy_exam_data');
             addQuestion();
-            alert(`تم إنشاء النموذج (${currentOpenModelName}) بنجاح. أضف أسئلتك ثم اضغط حفظ.`);
+            alert(`تم إنشاء النموذج (${currentOpenModelName}) بنجاح. أضف أسئلتك وسيتم الحفظ الفوري تلقائياً.`);
         }
 
         function addQuestion(data = null) {
@@ -270,7 +270,7 @@
             card.innerHTML = `
                 <div class="card-meta">
                     <span class="q-number-badge"></span>
-                    <select class="type-select" onchange="changeQuestionType(this); saveAll();">
+                    <select class="type-select" onchange="changeQuestionType(this);">
                         <option value="اختر الإجابة الصحيحة" ${selectedType === 'اختر الإجابة الصحيحة' ? 'selected' : ''}>اختر الإجابة الصحيحة (٤ خيارات)</option>
                         <option value="صح وخطأ" ${selectedType === 'صح وخطأ' ? 'selected' : ''}>صح وخطأ</option>
                         <option value="مزاوجة" ${selectedType === 'مزاوجة' ? 'selected' : ''}>سؤال مزاوجة (توصيل)</option>
@@ -282,7 +282,7 @@
                     <i class="fas fa-times-circle remove-btn" style="color:#cbd5e1; cursor:pointer; font-size:1.2rem;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
                 </div>
                 <div class="q-area">
-                    ${isStudent ? `<div class="q-text-input" style="cursor:default; overflow:visible; height:auto;">${qTextVal}</div>` : `<textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا...">${qTextVal}</textarea>`}
+                    ${isStudent ? `<div class="q-text-input" style="cursor:default; overflow:visible; height:auto;">${qTextVal}</div>` : `<textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا..." oninput="autoResizeTextarea(this); saveAll();">${qTextVal}</textarea>`}
                 </div>
                 <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
                 <div class="correct-ans-box admin-only" style="display:flex;">
@@ -297,12 +297,7 @@
             `;
             container.appendChild(card);
             
-            card.querySelectorAll('textarea').forEach(ta => {
-                autoResizeTextarea(ta);
-                ta.addEventListener('input', function() { autoResizeTextarea(this); saveAll(); });
-            });
-
-            bindOptionClickEvents(card, isStudent);
+            card.querySelectorAll('textarea').forEach(ta => autoResizeTextarea(ta));
             updateNumbers();
             if(!isStudent) saveAll();
         }
@@ -323,7 +318,6 @@
                 scoreContainer.style.display = (type === 'مزاوجة') ? 'none' : 'flex';
             }
 
-            bindOptionClickEvents(card, false);
             saveAll();
         }
 
@@ -517,7 +511,7 @@
                 });
                 saveAll();
                 document.getElementById('arrayInputText').value = "";
-                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وتوزيعها بدون أي أخطاء!`);
+                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وحفظها تلقائياً!`);
             } catch (e) {
                 console.error(e);
                 alert("حدث خطأ في قراءة المصفوفة. تأكد من لصق النصوص البرمجية بصورة صحيحة.");
@@ -998,21 +992,21 @@
         }
 
         function copyCurrentModelLink() {
-            if (!currentOpenModelName) { alert("الرجاء حفظ النموذج أولاً!"); return; }
+            if (!currentOpenModelName) { alert("الرجاء حفظ النموذج أولاً أو فتح نموذج من السحابة!"); return; }
             const shareUrl = window.location.origin + window.location.pathname + "?exam=" + encodeURIComponent(currentOpenModelName);
             navigator.clipboard.writeText(shareUrl).then(() => alert("تم نسخ رابط الاختبار للطلاب بنجاح! 🔗"));
         }
 
         async function renameCurrentModel() {
-            if (!currentOpenModelName) return;
+            if (!currentOpenModelName) { alert("لا يوجد نموذج مفتوح حالياً لإعادة تسميته."); return; }
             const newName = prompt("اسم النموذج الجديد:", currentOpenModelName);
             if (!newName || newName === currentOpenModelName) return;
             const snap = await rtdb.ref('models/' + currentOpenModelName).once('value');
             if (snap.exists()) {
                 await rtdb.ref('models/' + newName).set(snap.val());
                 await rtdb.ref('models/' + currentOpenModelName).remove();
-                currentOpenModelName = newName;
-                document.getElementById('current-model-label').innerText = `📁 ${newName}`;
+                currentOpenModelName = newName.trim();
+                document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
                 alert("تم التعديل بنجاح!");
             }
         }
@@ -1028,18 +1022,17 @@
         async function saveToCloud() {
             let modelName = currentOpenModelName;
             if (!modelName) {
-                modelName = prompt("أدخل اسم النموذج:");
+                modelName = prompt("أدخل اسم النموذج لحفظه في السحابة:");
                 if (!modelName) return;
                 currentOpenModelName = modelName.trim();
                 document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
             }
             const dataToSave = JSON.parse(localStorage.getItem('samy_exam_data') || '[]');
-            await rtdb.ref('models/' + modelName).set({
+            await rtdb.ref('models/' + currentOpenModelName).set({
                 teacher: "د. سامي بن محمد العمر",
                 data: dataToSave,
                 date: new Date().toLocaleString()
             });
-            alert(`تم حفظ التعديلات بنجاح في النموذج (${modelName})! 💾`);
         }
 
         function closeModals() { 
@@ -1081,7 +1074,17 @@
                 }; 
                 qs.push(d); 
             }); 
-            localStorage.setItem('samy_exam_data', JSON.stringify(qs)); 
+            
+            localStorage.setItem('samy_exam_data', JSON.stringify(qs));
+
+            // الحفظ التلقائي المباشر في السحابة إذا كان هناك نموذج مفتوح حالياً
+            if (currentOpenModelName) {
+                rtdb.ref('models/' + currentOpenModelName).update({
+                    teacher: "د. سامي بن محمد العمر",
+                    data: qs,
+                    date: new Date().toLocaleString()
+                });
+            }
         }
 
         function loadQuestions() { 
