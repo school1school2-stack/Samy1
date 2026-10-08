@@ -50,8 +50,8 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box;
         }
         .array-textarea {
-            width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
-            font-family: monospace; font-size: 0.9rem; direction: ltr; text-align: left; outline: none; box-sizing: border-box; resize: vertical; margin-bottom: 10px;
+            width: 100%; height: 150px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
+            font-family: monospace; font-size: 0.85rem; direction: ltr; text-align: left; outline: none; box-sizing: border-box; resize: vertical; margin-bottom: 10px;
         }
 
         .auth-card { text-align: center; border: none; padding: 40px; }
@@ -187,9 +187,12 @@
     </div>
 
     <div class="array-import-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px; font-size:0.95rem;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية:</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: bold; color: #0284c7; font-size:0.95rem;"><i class="fas fa-file-code"></i> مصفوفة الأسئلة البرمجية (تتحدث وتُحفظ تلقائياً):</label>
+            <button class="btn" style="background:#10b981; padding:4px 10px; font-size:0.75rem;" onclick="copyArrayCode()"><i class="fas fa-copy"></i> نسخ المصفوفة</button>
+        </div>
         <textarea id="arrayInputText" class="array-textarea" placeholder="[ { t: '...', q: '...', ... } ]"></textarea>
-        <button class="btn" style="background:#0284c7;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة</button>
+        <button class="btn" style="background:#0284c7; width:100%; justify-content:center;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة من النص</button>
     </div>
 
     <div class="container" id="quiz-content"></div>
@@ -251,6 +254,7 @@
             currentOpenModelName = modelName.trim();
             document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
             document.getElementById('quiz-content').innerHTML = '';
+            document.getElementById('arrayInputText').value = '';
             localStorage.removeItem('samy_exam_data');
             addQuestion();
         }
@@ -468,7 +472,6 @@
             });
         }
 
-        // --- التعديل الجوهري لضمان مطابقة الأنواع السبعة بدقة وحظر تداخل الأسئلة ---
         function importArrayQuestions() {
             let rawData = document.getElementById('arrayInputText').value.trim();
             if (!rawData) { alert("الرجاء لصق مصفوفة الأسئلة أولاً!"); return; }
@@ -489,6 +492,8 @@
                 }
 
                 if (!Array.isArray(arr)) throw new Error("Not an array");
+
+                document.getElementById('quiz-content').innerHTML = '';
 
                 arr.forEach(item => {
                     let mappedType = "اختر الإجابة الصحيحة";
@@ -525,13 +530,19 @@
                         score: calcScore
                     });
                 });
+                
                 saveAll();
-                document.getElementById('arrayInputText').value = "";
-                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وحفظها تلقائياً!`);
+                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وحفظ المصفوفة تلقائياً!`);
             } catch (e) {
                 console.error(e);
                 alert("حدث خطأ في قراءة المصفوفة. تأكد من لصق النصوص البرمجية بصورة صحيحة.");
             }
+        }
+
+        function copyArrayCode() {
+            const txt = document.getElementById('arrayInputText').value;
+            if(!txt) { alert("المصفوفة فارغة حالياً."); return; }
+            navigator.clipboard.writeText(txt).then(() => alert("تم نسخ كود المصفوفة بنجاح! 📋"));
         }
 
         async function verifyStudentEmail() {
@@ -1090,8 +1101,11 @@
 
         function updateNumbers() { document.querySelectorAll('.q-number-badge').forEach((b, i) => b.innerText = `السؤال ${i+1}`); }
         
+        // --- تحديث المزامنة الآلية مع مربع النص للمصفوفة ---
         function saveAll() { 
             const qs = []; 
+            const arrayItems = [];
+
             document.querySelectorAll('.question-card').forEach(c => { 
                 const qType = c.querySelector('.type-select')?.value || 'اختر الإجابة الصحيحة';
                 let opts = [];
@@ -1122,9 +1136,26 @@
                     score: calculatedTotalScore
                 }; 
                 qs.push(d); 
+
+                let itemObj = {
+                    t: qType,
+                    q: d.text,
+                    ans: d.ans,
+                    score: d.score
+                };
+                if (opts.length > 0) itemObj.opts = opts;
+                if (rightOpts.length > 0) itemObj.rightOpts = rightOpts;
+                if (subScores.length > 0) itemObj.subScores = subScores;
+
+                arrayItems.push(itemObj);
             }); 
             
             localStorage.setItem('samy_exam_data', JSON.stringify(qs));
+
+            const textareaEl = document.getElementById('arrayInputText');
+            if (textareaEl) {
+                textareaEl.value = "const rawQuizData = " + JSON.stringify(arrayItems, null, 2) + ";";
+            }
 
             if (currentOpenModelName) {
                 rtdb.ref('models/' + currentOpenModelName).update({
@@ -1159,6 +1190,7 @@
         function clearAll() {
             if(confirm("مسح الكل؟")) {
                 document.getElementById('quiz-content').innerHTML = '';
+                document.getElementById('arrayInputText').value = '';
                 localStorage.removeItem('samy_exam_data');
                 currentOpenModelName = null;
                 document.getElementById('current-model-label').innerText = "📁 نموذج جديد";
