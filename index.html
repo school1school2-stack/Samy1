@@ -182,8 +182,8 @@
     </div>
 
     <div class="array-import-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (معالجة ذكية للتعليقات):</label>
-        <textarea id="arrayInputText" class="array-textarea" placeholder="الصق مصفوفة الـ JS هنا..."></textarea>
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (انسخ من علامة [ إلى ] فقط):</label>
+        <textarea id="arrayInputText" class="array-textarea" placeholder="[ { t: '...', q: '...', ... } ]"></textarea>
         <button class="btn" style="background:#0284c7;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة</button>
     </div>
 
@@ -358,15 +358,23 @@
             });
         }
 
-        // ⭐ دالة استيراد مصفوفة محسنة تتجاهل التعليقات البرمجية (//) لتفادي أخطاء التنسيق
+        // ⭐ دالة استيراد مبسطة وآمنة جداً (تقبل محتوى الأقواس [...] مباشرة)
         function importArrayQuestions() {
             let rawData = document.getElementById('arrayInputText').value.trim();
             if (!rawData) { alert("الرجاء لصق مصفوفة الأسئلة أولاً!"); return; }
             try {
-                // إزالة التعليقات السطرية التي تبدأ بـ // لتجنب أخطاء التنسيق
+                // إزالة التعليقات وتأمين القراءة المباشرة
                 let cleanedText = rawData.replace(/\/\/.*/g, '');
-                let cleanData = cleanedText.replace(/^\s*(const|let|var)\s+[\w]+\s*=\s*/, '');
-                let arr = Function('"use strict"; return (' + cleanData + ');')();
+                if (!cleanedText.startsWith('[')) {
+                    // في حال نسيت وألصقت سطر الـ const، نقوم بقصه تلقائياً
+                    let firstBracket = cleanedText.indexOf('[');
+                    if (firstBracket !== -1) {
+                        cleanedText = cleanedText.substring(firstBracket);
+                    } else {
+                        cleanedText = '[' + cleanedText + ']';
+                    }
+                }
+                let arr = Function('"use strict"; return (' + cleanedText + ');')();
                 if (!Array.isArray(arr)) throw new Error("Not an array");
 
                 arr.forEach(item => {
@@ -393,7 +401,7 @@
                 alert(`تم استيراد ${arr.length} سؤالاً بنجاح وتوزيعها بدون أخطاء!`);
             } catch (e) {
                 console.error(e);
-                alert("حدث خطأ في قراءة المصفوفة. تأكد من نسخ الأقواس والمحتوى بصورة صحيحة دون نصوص خارجية.");
+                alert("حدث خطأ في قراءة المصفوفة. تأكد من نسخ الأقواس [...] بدقة دون نصوص خارجية.");
             }
         }
 
