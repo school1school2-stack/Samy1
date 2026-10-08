@@ -382,7 +382,6 @@
             }
         }
 
-        // ⭐ الدوال المسؤولة عن الاستعلام وعرض السجل والمراجعة للمعلم والطالب (تم إصلاحها بالكامل)
         async function teacherSearchByEmail() {
             const emailInput = document.getElementById('teacherSearchEmail').value.trim().toLowerCase();
             if (!emailInput || !emailInput.includes('@')) {
@@ -426,8 +425,6 @@
                     itemDiv.className = 'cloud-item';
                     
                     const btnText = isTeacherMode ? '<i class="fas fa-edit"></i> مراجعة وتعديل وحذف' : '<i class="fas fa-file-alt"></i> استعراض التقرير';
-                    
-                    // تحويل مصفوفة الإجابات لتمريرها بأمان
                     const encodedAnswers = encodeURIComponent(JSON.stringify(data.answers || []));
                     const actionFunc = isTeacherMode 
                         ? `openEditableReport("${docId}", "${encodedAnswers}", ${data.score}, ${data.total})`
@@ -511,6 +508,7 @@
             document.getElementById('modal-overlay').style.display = 'block';
         }
 
+        // ⭐ دالة تحديث الحفظ المحدثة لتنعكس الدرجة فوراً في لوحة التحكم (Realtime DB و Firestore)
         async function saveGradeChanges(docId, total) {
             const selects = document.querySelectorAll('.score-edit-select');
             let newScore = 0;
@@ -519,7 +517,10 @@
             const docSnap = await docRef.get();
             if (!docSnap.exists) { alert("لم يتم العثور على سجل الطالب."); return; }
 
-            let answersArray = docSnap.data().answers || [];
+            const studentData = docSnap.data();
+            let answersArray = studentData.answers || [];
+            const studentEmail = studentData.email;
+            const modelId = studentData.model_id;
 
             selects.forEach((sel, idx) => {
                 const val = parseInt(sel.value);
@@ -529,12 +530,37 @@
                 }
             });
 
+            // 1. تحديث النتيجة في Cloud Firestore
             await docRef.update({
                 score: newScore,
                 answers: answersArray
             });
 
-            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total}`);
+            // 2. تحديث النتيجة في Realtime Database لتظهر فوراً في لوحة التحكم الرئيسية
+            try {
+                const rtdbQuery = await rtdb.ref("quran_results").orderByChild("email").equalTo(studentEmail).once('value');
+                rtdbQuery.forEach(childSnap => {
+                    const childVal = childSnap.val();
+                    if (childVal.model_id === modelId) {
+                        rtdb.ref("quran_results/" + childSnap.key).update({
+                            score: newScore,
+                            answers: answersArray,
+                            sections: {
+                                est: Math.round((newScore / total) * 100),
+                                ikm: Math.round((newScore / total) * 100),
+                                swh: Math.round((newScore / total) * 100),
+                                arb: Math.round((newScore / total) * 100),
+                                sah: Math.round((newScore / total) * 100),
+                                math: Math.round((newScore / total) * 100)
+                            }
+                        });
+                    }
+                });
+            } catch (err) {
+                console.error("خطأ في تحديث Realtime Database:", err);
+            }
+
+            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total} وتم تحديثها في اللوحة والسحابة.`);
             closeModals();
         }
 
