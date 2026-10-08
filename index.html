@@ -79,6 +79,12 @@
             font-family: inherit; font-size: 1.05rem; outline: none; box-sizing: border-box; text-align: right; background: #fff;
         }
 
+        .matching-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        @media (max-width: 600px) { .matching-container { grid-template-columns: 1fr; } }
+        .matching-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 12px; }
+        .matching-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+        .matching-input { width: 50px; text-align: center; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: bold; font-size: 1rem; }
+
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
 
@@ -177,7 +183,7 @@
     </div>
 
     <div class="array-import-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية:</label>
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (آمن ومرن):</label>
         <textarea id="arrayInputText" class="array-textarea" placeholder="الصق مصفوفة الـ JS هنا..."></textarea>
         <button class="btn" style="background:#0284c7;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة</button>
     </div>
@@ -222,7 +228,6 @@
             return array;
         }
 
-        // ⭐ زر نموذج جديد مع طلب تسمية النموذج قبل البدء
         function createNewModelPrompt() {
             const modelName = prompt("أدخل اسم النموذج الجديد قبل البدء:");
             if (!modelName || !modelName.trim()) return;
@@ -250,6 +255,7 @@
                     <select class="type-select" onchange="changeQuestionType(this); saveAll();">
                         <option value="4 خيارات" ${selectedType === '4 خيارات' ? 'selected' : ''}>٤ خيارات</option>
                         <option value="صح وخطأ" ${selectedType === 'صح وخطأ' ? 'selected' : ''}>صح وخطأ</option>
+                        <option value="مزاوجة" ${selectedType === 'مزاوجة' ? 'selected' : ''}>سؤال مزاوجة (توصيل)</option>
                         <option value="ذكر" ${selectedType === 'ذكر' ? 'selected' : ''}>وذكر</option>
                         <option value="عرف" ${selectedType === 'عرف' ? 'selected' : ''}>عرف</option>
                         <option value="عدد" ${selectedType === 'عدد' ? 'selected' : ''}>عدد</option>
@@ -296,6 +302,31 @@
                     <div class="opt-pair-row"><input type="text" class="opt-word opt" readonly value="${opts[0]}" style="text-align:center;"></div>
                     <div class="opt-pair-row"><input type="text" class="opt-word opt" readonly value="${opts[1]}" style="text-align:center;"></div>
                 </div>`;
+            } else if (type === 'مزاوجة') {
+                let leftOpts = data?.opts ? data.opts.slice(0, 5) : ['', '', '', '', ''];
+                let rightOpts = data?.rightOpts ? data.rightOpts.slice(0, 6) : ['', '', '', '', '', ''];
+                let studentAns = data?.studentAns || {};
+
+                let leftHtml = '<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue);">الفقرات (العمود الأول):</h4>';
+                leftOpts.forEach((item, idx) => {
+                    let sVal = studentAns[idx] || '';
+                    leftHtml += `<div class="matching-row">
+                        ${!isStudent ? `<input type="text" class="opt opt-left" value="${item}" placeholder="فقرة ${idx+1}" oninput="saveAll()" style="flex:1; padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">${idx+1})${item}</span>`}
+                        <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:60px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
+                    </div>`;
+                });
+                leftHtml += '</div>';
+
+                let rightHtml = '<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue);">الإجابات (العمود الثاني):</h4>';
+                rightOpts.forEach((item, idx) => {
+                    rightHtml += `<div class="matching-row">
+                        <span style="font-weight:bold; color:#0284c7; width:25px;">${idx+1}.</span>
+                        ${!isStudent ? `<input type="text" class="opt opt-right" value="${item}" placeholder="إجابة ${idx+1}" oninput="saveAll()" style="flex:1; padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">${item}</span>`}
+                    </div>`;
+                });
+                rightHtml += '</div>';
+
+                return `<div class="matching-container">${leftHtml}${rightHtml}</div>`;
             } else if (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(type)) {
                 const studentVal = (isStudent && data?.studentAns) ? data.studentAns : '';
                 const readonlyAttr = isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب (سيظهر للطالب أثناء الاختبار هنا)..."';
@@ -328,19 +359,40 @@
             });
         }
 
+        // ⭐ دالة استيراد المصفوفة الآمنة والمحصنة ضد أخطاء التنسيق
         function importArrayQuestions() {
             let rawData = document.getElementById('arrayInputText').value.trim();
             if (!rawData) { alert("الرجاء لصق مصفوفة الأسئلة أولاً!"); return; }
             try {
-                let arr = Function('"use strict"; return (' + rawData + ');')();
+                let cleanData = rawData.replace(/^\s*(const|let|var)\s+[\w]+\s*=\s*/, '');
+                let arr = Function('"use strict"; return (' + cleanData + ');')();
+                if (!Array.isArray(arr)) throw new Error("Not an array");
+
                 arr.forEach(item => {
-                    addQuestion({ text: item.q || "", opts: item.opts || [], ans: item.ans || "", qType: item.qType || "4 خيارات" });
+                    let mappedType = "4 خيارات";
+                    let itemType = (item.t || "").trim();
+                    if (itemType.includes("صح وخطأ") || itemType.includes("صح") || itemType.includes("خطأ")) {
+                        mappedType = "صح وخطأ";
+                    } else if (itemType.includes("مزاوجة") || itemType.includes("توصيل")) {
+                        mappedType = "مزاوجة";
+                    } else if (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(itemType)) {
+                        mappedType = itemType;
+                    }
+
+                    addQuestion({ 
+                        text: item.q || "", 
+                        opts: item.opts || [], 
+                        rightOpts: item.rightOpts || [],
+                        ans: item.ans || "", 
+                        qType: mappedType 
+                    });
                 });
                 saveAll();
                 document.getElementById('arrayInputText').value = "";
-                alert(`تم استيراد ${arr.length} سؤالاً بنجاح!`);
+                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وتوزيعها بدون أخطاء!`);
             } catch (e) {
-                alert("خطأ في تنسيق المصفوفة.");
+                console.error(e);
+                alert("حدث خطأ في تنسيق المصفوفة. تأكد من نسخ الأقواس والمحتوى بصورة صحيحة.");
             }
         }
 
@@ -465,7 +517,7 @@
                     <td>${i+1}</td>
                     <td style="text-align:right">${ans.qText || ''}</td>
                     <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
-                    <td>${ans.studentAns || '--'}</td>
+                    <td>${typeof ans.studentAns === 'object' ? JSON.stringify(ans.studentAns) : (ans.studentAns || '--')}</td>
                     <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
                     <td>${ans.isCorrect ? 1 : 0}</td>
                 </tr>`;
@@ -491,7 +543,7 @@
                         <td>${i+1}</td>
                         <td style="text-align:right">${ans.qText || ''}</td>
                         <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
-                        <td>${ans.studentAns || '--'}</td>
+                        <td>${typeof ans.studentAns === 'object' ? JSON.stringify(ans.studentAns) : (ans.studentAns || '--')}</td>
                         <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
                         <td>
                             <select class="score-edit-select" data-index="${i}" style="padding:5px; border-radius:8px; font-weight:bold; font-family:inherit;">
@@ -539,10 +591,7 @@
                 }
             });
 
-            await docRef.update({
-                score: newScore,
-                answers: answersArray
-            });
+            await docRef.update({ score: newScore, answers: answersArray });
 
             try {
                 const rtdbQuery = await rtdb.ref("quran_results").orderByChild("email").equalTo(studentEmail).once('value');
@@ -563,24 +612,19 @@
                         });
                     }
                 });
-            } catch (err) {
-                console.error("خطأ في تحديث Realtime Database:", err);
-            }
+            } catch (err) { console.error(err); }
 
-            alert(`تم حفظ التعديلات بنجاح! النتيجة الجديدة المحدثة: ${newScore} من ${total}`);
+            alert(`تم حفظ التعديلات بنجاح! النتيجة المحدثة: ${newScore} من ${total}`);
             closeModals();
         }
 
         async function deleteStudentExamRecord(docId) {
-            if (!confirm("⚠️ تحذير: هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً؟ سيتمكن من إعادة الاختبار من جديد.")) return;
+            if (!confirm("⚠️ هل أنت متأكد من حذف سجل اختبار هذا الطالب نهائياً؟")) return;
             try {
                 await fsDb.collection("alkfaeat_results").doc(docId).delete();
-                alert("تم حذف سجل الاختبار بنجاح، ويمكن للطالب الآن إعادة الاختبار.");
+                alert("تم حذف سجل الاختبار بنجاح.");
                 closeModals();
-            } catch (err) {
-                console.error(err);
-                alert("حدث خطأ أثناء محاولة حذف السجل.");
-            }
+            } catch (err) { alert("حدث خطأ أثناء الحذف."); }
         }
 
         async function gradeExam() {
@@ -592,16 +636,24 @@
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
                 const hasSelected = c.querySelector('.selected-opt');
                 const textAns = c.querySelector('.student-answer-textarea')?.value.trim();
+                
+                let isMatchingFilled = true;
+                if (qType === 'مزاوجة') {
+                    c.querySelectorAll('.matching-ans-input').forEach(inp => {
+                        if (!inp.value.trim()) isMatchingFilled = false;
+                    });
+                }
 
                 if ((['4 خيارات', 'صح وخطأ'].includes(qType) && !hasSelected) || 
-                    (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(qType) && !textAns)) {
+                    (['ذكر', 'عرف', 'عدد', 'صحح الخطأ'].includes(qType) && !textAns) ||
+                    (qType === 'مزاوجة' && !isMatchingFilled)) {
                     c.classList.add('unanswered-alert');
                     if (firstUnansweredIndex === -1) firstUnansweredIndex = index + 1;
                 }
             });
 
             if (firstUnansweredIndex !== -1) {
-                alert(`⚠️ تنبيه: يوجد سؤال لم تقم بالإجابة عليه (السؤال رقم ${firstUnansweredIndex}).`);
+                alert(`⚠️ تنبيه: يوجد سؤال لم تقم بإجابة جميع فقراته (السؤال رقم ${firstUnansweredIndex}).`);
                 cards[firstUnansweredIndex - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
@@ -616,18 +668,31 @@
                 const qType = c.querySelector('.type-select')?.value || "4 خيارات";
                 
                 let selWord = "";
+                let isCorrect = false;
+                const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
+
                 if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
                     selWord = c.querySelector('.selected-opt .opt')?.value || "";
+                    isCorrect = (selWord.trim() === correctKey.trim());
+                } else if (qType === 'مزاوجة') {
+                    let studentMatching = {};
+                    c.querySelectorAll('.matching-ans-input').forEach(inp => {
+                        studentMatching[inp.dataset.leftIdx] = inp.value.trim();
+                    });
+                    selWord = studentMatching;
+                    
+                    // مقارنة إجابة المزاوجة مع النموذجية (تتوقع مطابقة المفاتيح أو النص)
+                    isCorrect = true; 
+                    let correctObj = {};
+                    try { correctObj = JSON.parse(correctKey); } catch(e) {}
+                    
+                    Object.keys(studentMatching).forEach(k => {
+                        if (correctObj[k] && correctObj[k].toString().trim() !== studentMatching[k].toString().trim()) {
+                            isCorrect = false;
+                        }
+                    });
                 } else {
                     selWord = c.querySelector('.student-answer-textarea')?.value.trim() || "";
-                }
-
-                const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
-                
-                let isCorrect = false;
-                if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
-                    isCorrect = (selWord.trim() === correctKey.trim());
-                } else {
                     isCorrect = (selWord.toLowerCase() === correctKey.toLowerCase() && correctKey !== "");
                 }
 
@@ -687,7 +752,6 @@
             }
         }
 
-        // ⭐ نافذة فتح النماذج مع إضافة زر لحذف النموذج كامل مباشرة من السحابة
         function loadFromCloud() {
             rtdb.ref('models').once('value', snapshot => {
                 const ms = snapshot.val();
@@ -764,7 +828,6 @@
             clearAll();
         }
 
-        // ⭐ زر الحفظ التلقائي في النموذج المفتوح حالياً دون طلب اسم جديد إذا كان مسجلاً
         async function saveToCloud() {
             let modelName = currentOpenModelName;
             if (!modelName) {
@@ -794,11 +857,23 @@
         function saveAll() { 
             const qs = []; 
             document.querySelectorAll('.question-card').forEach(c => { 
+                const qType = c.querySelector('.type-select')?.value || '4 خيارات';
+                let opts = [];
+                let rightOpts = [];
+
+                if (qType === 'مزاوجة') {
+                    c.querySelectorAll('.opt-left').forEach(i => opts.push(i.value));
+                    c.querySelectorAll('.opt-right').forEach(i => rightOpts.push(i.value));
+                } else {
+                    opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value);
+                }
+
                 let d = { 
                     ans: c.querySelector('.ans-val')?.value || '',
-                    qType: c.querySelector('.type-select')?.value || '4 خيارات',
+                    qType: qType,
                     text: c.querySelector('.q-main')?.value || "", 
-                    opts: Array.from(c.querySelectorAll('.opt')).map(i => i.value) 
+                    opts: opts,
+                    rightOpts: rightOpts
                 }; 
                 qs.push(d); 
             }); 
