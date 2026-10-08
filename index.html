@@ -296,7 +296,6 @@
             `;
             container.appendChild(card);
             
-            // تفعيل أحداث النقر للخيارات (مهم جداً لتفعيل الأزرار للطلاب)
             bindOptionClickEvents(card, isStudent);
 
             card.querySelectorAll('textarea').forEach(ta => autoResizeTextarea(ta));
@@ -345,7 +344,7 @@
                     let subScoreVal = subScores[idx] !== undefined ? subScores[idx] : 1;
                     leftHtml += `<div class="matching-row">
                         ${!isStudent ? `<input type="text" class="opt opt-left" value="${item}" placeholder="فقرة ${idx+1}" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">${idx+1})${item}</span>`}
-                        ${!isStudent ? `<input type="number" min="0" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذه الفقرة">` : ``}
+                        ${!isStudent ? `<input type="number" min="1" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذه الفقرة">` : ``}
                         <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:50px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
                     </div>`;
                 });
@@ -387,7 +386,7 @@
                     html += `<div class="enum-row" style="margin-bottom:10px;">
                         <span style="font-weight:bold; color:#0284c7; width:20px;">${idx+1}.</span>
                         ${!isStudent ? `<input type="text" class="enum-label-input" value="${item}" placeholder="عنوان العنصر أو اتركه فارغاً" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">عنصر ${idx+1}</span>`}
-                        ${!isStudent ? `<input type="number" min="0" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذا العنصر">` : ``}
+                        ${!isStudent ? `<input type="number" min="1" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذا العنصر">` : ``}
                         <input type="text" class="enum-ans-input" data-enum-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب للعنصر"'} value="${sVal}" style="flex:2; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
                     </div>`;
                 });
@@ -739,12 +738,13 @@
                             score: newScore,
                             answers: answersArray,
                             sections: {
-                                est: Math.round((newScore / total) * 100),
-                                ikm: Math.round((newScore / total) * 100),
-                                swh: Math.round((newScore / total) * 100),
-                                arb: Math.round((newScore / total) * 100),
-                                sah: Math.round((newScore / total) * 100),
-                                math: Math.round((newScore / total) * 100)
+                                mcq: Math.round((newScore / total) * 100),
+                                def: Math.round((newScore / total) * 100),
+                                num: Math.round((newScore / total) * 100),
+                                men: Math.round((newScore / total) * 100),
+                                mat: Math.round((newScore / total) * 100),
+                                tf: Math.round((newScore / total) * 100),
+                                cor: Math.round((newScore / total) * 100)
                             }
                         });
                     }
@@ -764,6 +764,7 @@
             } catch (err) { alert("حدث خطأ أثناء الحذف."); }
         }
 
+        // --- التعديل الجوهري: دالة احتساب وتصحيح الاختبار بالكامل بالفقرات ---
         async function gradeExam() {
             const cards = document.querySelectorAll('.question-card');
             let firstUnansweredIndex = -1;
@@ -805,10 +806,21 @@
             let totalPossibleScore = 0;
             let details = [];
 
+            // تجميع درجات الأقسام السبعة للرسم البياني بشكل منفصل ودقيق
+            let sectionTotals = { mcq: { earned: 0, max: 0 }, def: { earned: 0, max: 0 }, num: { earned: 0, max: 0 }, men: { earned: 0, max: 0 }, mat: { earned: 0, max: 0 }, tf: { earned: 0, max: 0 }, cor: { earned: 0, max: 0 } };
+
             cards.forEach((c) => {
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
                 const qType = c.querySelector('.type-select')?.value || "اختر الإجابة الصحيحة";
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
+
+                let secKey = 'mcq';
+                if (qType === 'صح وخطأ') secKey = 'tf';
+                else if (qType === 'عرّف') secKey = 'def';
+                else if (qType === 'اذكر') secKey = 'men';
+                else if (qType === 'صحح الخطأ') secKey = 'cor';
+                else if (qType === 'عددّد') secKey = 'num';
+                else if (qType === 'مزاوجة') secKey = 'mat';
 
                 if (qType === 'مزاوجة') {
                     let studentMatching = {};
@@ -821,6 +833,7 @@
                     let questionMaxScore = 0;
                     let questionEarned = 0;
 
+                    // احتساب كل فقرة بشكل فردي
                     leftRowsInputs.forEach((inp, i) => {
                         let subScore = parseInt(inp.value) || 1;
                         questionMaxScore += subScore;
@@ -835,6 +848,9 @@
                     });
 
                     totalScore += questionEarned;
+                    sectionTotals[secKey].earned += questionEarned;
+                    sectionTotals[secKey].max += questionMaxScore;
+
                     details.push({
                         qText: qTxt,
                         qType: qType,
@@ -854,6 +870,7 @@
                     let questionMaxScore = 0;
                     let questionEarned = 0;
 
+                    // احتساب كل عنصر تعداد بشكل فردي
                     enumSubScores.forEach((inp, i) => {
                         let subScore = parseInt(inp.value) || 1;
                         questionMaxScore += subScore;
@@ -865,6 +882,9 @@
                     });
 
                     totalScore += questionEarned;
+                    sectionTotals[secKey].earned += questionEarned;
+                    sectionTotals[secKey].max += questionMaxScore;
+
                     details.push({
                         qText: qTxt,
                         qType: qType,
@@ -891,6 +911,9 @@
                     let earned = isCorrect ? questionMaxScore : 0;
                     totalScore += earned;
 
+                    sectionTotals[secKey].earned += earned;
+                    sectionTotals[secKey].max += questionMaxScore;
+
                     details.push({
                         qText: qTxt,
                         qType: qType,
@@ -901,6 +924,13 @@
                         isCorrect: isCorrect
                     });
                 }
+            });
+
+            // حساب النسب المئوية الدقيقة لكل أداء قسم
+            let calcSections = {};
+            Object.keys(sectionTotals).forEach(k => {
+                let m = sectionTotals[k].max;
+                calcSections[k] = m > 0 ? Math.round((sectionTotals[k].earned / m) * 100) : 0;
             });
 
             const examId = new URLSearchParams(window.location.search).get('exam') || "اختبار عام";
@@ -914,14 +944,7 @@
                     model_id: examId,
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     answers: details,
-                    sections: {
-                        est: Math.round((totalScore / totalPossibleScore) * 100),
-                        ikm: Math.round((totalScore / totalPossibleScore) * 100),
-                        swh: Math.round((totalScore / totalPossibleScore) * 100),
-                        arb: Math.round((totalScore / totalPossibleScore) * 100),
-                        sah: Math.round((totalScore / totalPossibleScore) * 100),
-                        math: Math.round((totalScore / totalPossibleScore) * 100)
-                    }
+                    sections: calcSections
                 });
 
                 await fsDb.collection("alkfaeat_results").add({
