@@ -182,8 +182,8 @@
     </div>
 
     <div class="array-import-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (انسخ من علامة [ إلى ] فقط):</label>
-        <textarea id="arrayInputText" class="array-textarea" placeholder="[ { t: '...', q: '...', ... } ]"></textarea>
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (يقبل اللصق المباشر بكل مرونة):</label>
+        <textarea id="arrayInputText" class="array-textarea" placeholder="الصق المصفوفة هنا (سواء كانت تبدأ بـ const أو تحتوي على تعليقات)..."></textarea>
         <button class="btn" style="background:#0284c7;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة</button>
     </div>
 
@@ -358,23 +358,32 @@
             });
         }
 
-        // ⭐ دالة استيراد مبسطة وآمنة جداً (تقبل محتوى الأقواس [...] مباشرة)
+        // ⭐ دالة استيراد متطورة تقبل أي نص (سواء بوجود const أو تعليقات) وتترجمه بأمان تام
         function importArrayQuestions() {
             let rawData = document.getElementById('arrayInputText').value.trim();
             if (!rawData) { alert("الرجاء لصق مصفوفة الأسئلة أولاً!"); return; }
             try {
-                // إزالة التعليقات وتأمين القراءة المباشرة
-                let cleanedText = rawData.replace(/\/\/.*/g, '');
-                if (!cleanedText.startsWith('[')) {
-                    // في حال نسيت وألصقت سطر الـ const، نقوم بقصه تلقائياً
-                    let firstBracket = cleanedText.indexOf('[');
-                    if (firstBracket !== -1) {
-                        cleanedText = cleanedText.substring(firstBracket);
+                // إزالة التعليقات وتحويل النص لبيانات صالحة للقراءة الفورية
+                let cleanText = rawData
+                    .replace(/\/\/.*/g, '') // إزالة التعليقات السطرية
+                    .replace(/^\s*(const|let|var)\s+[\w]+\s*=\s*/, '') // إزالة تعريف المتغير إن وُجد
+                    .trim();
+
+                let arr;
+                try {
+                    arr = Function('"use strict"; return (' + cleanText + ');')();
+                } catch(err1) {
+                    // محاولة بديلة متقدمة جداً لاستخراج مصفوفة JSON بحتة
+                    let start = cleanText.indexOf('[');
+                    let end = cleanText.lastIndexOf(']');
+                    if(start !== -1 && end !== -1) {
+                        let jsonStr = cleanText.substring(start, end + 1);
+                        arr = eval('(' + jsonStr + ')');
                     } else {
-                        cleanedText = '[' + cleanedText + ']';
+                        throw err1;
                     }
                 }
-                let arr = Function('"use strict"; return (' + cleanedText + ');')();
+
                 if (!Array.isArray(arr)) throw new Error("Not an array");
 
                 arr.forEach(item => {
@@ -398,10 +407,10 @@
                 });
                 saveAll();
                 document.getElementById('arrayInputText').value = "";
-                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وتوزيعها بدون أخطاء!`);
+                alert(`تم استيراد ${arr.length} سؤالاً بنجاح وتوزيعها بدون أي أخطاء!`);
             } catch (e) {
                 console.error(e);
-                alert("حدث خطأ في قراءة المصفوفة. تأكد من نسخ الأقواس [...] بدقة دون نصوص خارجية.");
+                alert("حدث خطأ في قراءة المصفوفة. تأكد من لصق النصوص البرمجية بصورة صحيحة.");
             }
         }
 
@@ -901,6 +910,7 @@
                     }
                 }); 
             } else { 
+                document.querySelector('.container').style.display, 'block';
                 document.querySelector('.container').style.display = 'block';
                 const s = localStorage.getItem('samy_exam_data'); 
                 if(s) { JSON.parse(s).forEach(q => addQuestion(q)); } 
