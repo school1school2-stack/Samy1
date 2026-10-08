@@ -83,7 +83,6 @@
         @media (max-width: 600px) { .matching-container { grid-template-columns: 1fr; } }
         .matching-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 12px; }
         .matching-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
-        .matching-input { width: 50px; text-align: center; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: bold; font-size: 1rem; }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
@@ -183,7 +182,7 @@
     </div>
 
     <div class="array-import-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (آمن ومرن):</label>
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> استيراد مصفوفة أسئلة جماعية (معالجة ذكية للتعليقات):</label>
         <textarea id="arrayInputText" class="array-textarea" placeholder="الصق مصفوفة الـ JS هنا..."></textarea>
         <button class="btn" style="background:#0284c7;" onclick="importArrayQuestions()"><i class="fas fa-magic"></i> توليد وتوزيع الأسئلة</button>
     </div>
@@ -303,8 +302,8 @@
                     <div class="opt-pair-row"><input type="text" class="opt-word opt" readonly value="${opts[1]}" style="text-align:center;"></div>
                 </div>`;
             } else if (type === 'مزاوجة') {
-                let leftOpts = data?.opts ? data.opts.slice(0, 5) : ['', '', '', '', ''];
-                let rightOpts = data?.rightOpts ? data.rightOpts.slice(0, 6) : ['', '', '', '', '', ''];
+                let leftOpts = data?.opts ? data.opts : ['', '', '', '', ''];
+                let rightOpts = data?.rightOpts ? data.rightOpts : ['', '', '', '', '', ''];
                 let studentAns = data?.studentAns || {};
 
                 let leftHtml = '<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue);">الفقرات (العمود الأول):</h4>';
@@ -359,12 +358,14 @@
             });
         }
 
-        // ⭐ دالة استيراد المصفوفة الآمنة والمحصنة ضد أخطاء التنسيق
+        // ⭐ دالة استيراد مصفوفة محسنة تتجاهل التعليقات البرمجية (//) لتفادي أخطاء التنسيق
         function importArrayQuestions() {
             let rawData = document.getElementById('arrayInputText').value.trim();
             if (!rawData) { alert("الرجاء لصق مصفوفة الأسئلة أولاً!"); return; }
             try {
-                let cleanData = rawData.replace(/^\s*(const|let|var)\s+[\w]+\s*=\s*/, '');
+                // إزالة التعليقات السطرية التي تبدأ بـ // لتجنب أخطاء التنسيق
+                let cleanedText = rawData.replace(/\/\/.*/g, '');
+                let cleanData = cleanedText.replace(/^\s*(const|let|var)\s+[\w]+\s*=\s*/, '');
                 let arr = Function('"use strict"; return (' + cleanData + ');')();
                 if (!Array.isArray(arr)) throw new Error("Not an array");
 
@@ -392,7 +393,7 @@
                 alert(`تم استيراد ${arr.length} سؤالاً بنجاح وتوزيعها بدون أخطاء!`);
             } catch (e) {
                 console.error(e);
-                alert("حدث خطأ في تنسيق المصفوفة. تأكد من نسخ الأقواس والمحتوى بصورة صحيحة.");
+                alert("حدث خطأ في قراءة المصفوفة. تأكد من نسخ الأقواس والمحتوى بصورة صحيحة دون نصوص خارجية.");
             }
         }
 
@@ -681,7 +682,6 @@
                     });
                     selWord = studentMatching;
                     
-                    // مقارنة إجابة المزاوجة مع النموذجية (تتوقع مطابقة المفاتيح أو النص)
                     isCorrect = true; 
                     let correctObj = {};
                     try { correctObj = JSON.parse(correctKey); } catch(e) {}
