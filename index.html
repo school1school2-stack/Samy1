@@ -80,12 +80,13 @@
             font-family: inherit; font-size: 1.05rem; outline: none; box-sizing: border-box; text-align: right; background: #fff;
         }
 
-        .matching-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-        @media (max-width: 768px) { .matching-container { grid-template-columns: 1fr; } }
-        .matching-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; box-sizing: border-box; }
-        .matching-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+        .matching-container, .enumeration-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        @media (max-width: 768px) { .matching-container, .enumeration-container { grid-template-columns: 1fr; } }
+        .matching-box, .enumeration-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; box-sizing: border-box; }
+        .matching-row, .enum-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
         .matching-row input[type="text"] { flex: 1; min-width: 100px; }
-        .matching-row input[type="number"] { width: 50px; text-align: center; padding: 6px; border: 1px solid #10b981; border-radius: 6px; font-weight: bold; color: #166534; }
+        .matching-row input[type="number"], .enum-row input[type="number"] { width: 50px; text-align: center; padding: 6px; border: 1px solid #10b981; border-radius: 6px; font-weight: bold; color: #166534; }
+        .enum-row input[type="text"] { flex: 1; min-width: 150px; }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
@@ -103,7 +104,7 @@
         .btn-link { background: #06b6d4; } .btn-del { background: #ef4444; } .btn-rename { background: #f59e0b; } .btn-new { background: #10b981; }
         .btn-clear { background: #64748b; padding: 8px; border-radius: 50%; }
 
-        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only, body.student-mode .matching-controls, body.student-mode .sub-score-field { display: none !important; }
+        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only, body.student-mode .matching-controls, body.student-mode .sub-score-field, body.student-mode .enum-controls { display: none !important; }
         body.student-mode .selected-opt { background: rgba(59, 130, 246, 0.2) !important; border: 2px solid var(--royal-blue) !important; }
 
         #report-modal, #cloud-modal, #history-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 700px; max-height: 85%; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 20px; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.4); box-sizing: border-box; }
@@ -237,7 +238,7 @@
                 let parts = [];
                 Object.keys(ansVal).sort((a,b)=>a-b).forEach(k => {
                     let fNum = parseInt(k) + 1;
-                    parts.push(`فقرة ${fNum} ← إجابة ${ansVal[k]}`);
+                    parts.push(`فقرة ${fNum} ← ${ansVal[k]}`);
                 });
                 return parts.join(' | ');
             }
@@ -263,18 +264,18 @@
             const isStudent = document.body.classList.contains('student-mode');
             const qTextVal = data ? (data.text || "") : "";
             const correctAnsVal = data ? (data.ans || "") : "";
-            const selectedType = data ? (data.qType || "4 خيارات") : "4 خيارات";
+            const selectedType = data ? (data.qType || "اختر الإجابة الصحيحة") : "اختر الإجابة الصحيحة";
             const qScoreVal = data && data.score !== undefined ? data.score : 1;
 
             card.innerHTML = `
                 <div class="card-meta">
                     <span class="q-number-badge"></span>
                     <select class="type-select" onchange="changeQuestionType(this); saveAll();">
-                        <option value="4 خيارات" ${selectedType === '4 خيارات' ? 'selected' : ''}>٤ خيارات</option>
+                        <option value="اختر الإجابة الصحيحة" ${selectedType === 'اختر الإجابة الصحيحة' ? 'selected' : ''}>اختر الإجابة الصحيحة (٤ خيارات)</option>
                         <option value="صح وخطأ" ${selectedType === 'صح وخطأ' ? 'selected' : ''}>صح وخطأ</option>
                         <option value="مزاوجة" ${selectedType === 'مزاوجة' ? 'selected' : ''}>سؤال مزاوجة (توصيل)</option>
+                        <option value="عددّد" ${selectedType === 'عددّد' ? 'selected' : ''}>عددّد (نقاط متعددة)</option>
                         <option value="عرّف" ${selectedType === 'عرّف' ? 'selected' : ''}>عرّف</option>
-                        <option value="عددّد" ${selectedType === 'عددّد' ? 'selected' : ''}>عددّد</option>
                         <option value="اذكر" ${selectedType === 'اذكر' ? 'selected' : ''}>اذكر</option>
                         <option value="صحح الخطأ" ${selectedType === 'صحح الخطأ' ? 'selected' : ''}>صحح الخطأ</option>
                     </select>
@@ -284,9 +285,9 @@
                     ${isStudent ? `<div class="q-text-input" style="cursor:default; overflow:visible; height:auto;">${qTextVal}</div>` : `<textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا...">${qTextVal}</textarea>`}
                 </div>
                 <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
-                <div class="correct-ans-box admin-only">
-                    <input type="text" placeholder="الإجابة الصحيحة (لمزاوجة اكتب الأرقام بمسافات مثل: 5 3 2 4 1)" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
-                    <div class="single-score-container" style="display:${selectedType === 'مزاوجة' ? 'none' : 'flex'}; align-items:center; gap:5px; white-space:nowrap;">
+                <div class="correct-ans-box admin-only" style="display:${['مزاوجة', 'عددّد'].includes(selectedType) ? 'none' : 'flex'};">
+                    <input type="text" placeholder="الإجابة الصحيحة" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
+                    <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
                         <span style="font-size:0.85rem; font-weight:bold; color:#166534;">درجة السؤال:</span>
                         <input type="number" min="1" class="q-score-input" value="${qScoreVal}" oninput="saveAll()" title="درجة السؤال الكلية">
                     </div>
@@ -312,9 +313,9 @@
             const ansArea = card.querySelector('.ans-grid-area');
             ansArea.innerHTML = renderOptionsByType(type, null, false);
             
-            const singleScoreDiv = card.querySelector('.single-score-container');
-            if(singleScoreDiv) {
-                singleScoreDiv.style.display = (type === 'مزاوجة') ? 'none' : 'flex';
+            const correctBox = card.querySelector('.correct-ans-box');
+            if(correctBox) {
+                correctBox.style.display = (type === 'مزاوجة' || type === 'عددّد') ? 'none' : 'flex';
             }
 
             bindOptionClickEvents(card, false);
@@ -369,7 +370,34 @@
                 rightHtml += '</div>';
 
                 return `<div class="matching-container">${leftHtml}${rightHtml}</div>`;
-            } else if (['عرّف', 'عددّد', 'اذكر', 'صحح الخطأ'].includes(type)) {
+            } else if (type === 'عددّد') {
+                let enumItems = data?.opts ? data.opts : ['', ''];
+                let subScores = data?.subScores || enumItems.map(() => 1);
+                let studentAns = data?.studentAns || {};
+
+                let html = `<div style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:12px; box-sizing:border-box;">
+                    <h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">عناصر التعداد المطلوب من الطالب إجابتها مع درجاتها:</h4>`;
+                
+                enumItems.forEach((item, idx) => {
+                    let sVal = studentAns[idx] || '';
+                    let subScoreVal = subScores[idx] !== undefined ? subScores[idx] : 1;
+                    html += `<div class="enum-row" style="margin-bottom:10px;">
+                        <span style="font-weight:bold; color:#0284c7; width:20px;">${idx+1}.</span>
+                        ${!isStudent ? `<input type="text" class="enum-label-input" value="${item}" placeholder="عنوان العنصر أو اتركه فارغاً" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">عنصر ${idx+1}</span>`}
+                        ${!isStudent ? `<input type="number" min="0" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذا العنصر">` : ``}
+                        <input type="text" class="enum-ans-input" data-enum-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب للعنصر"'} value="${sVal}" style="flex:2; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
+                    </div>`;
+                });
+
+                if(!isStudent) {
+                    html += `<div class="enum-controls" style="margin-top:10px; display:flex; gap:8px;">
+                        <button type="button" class="btn" style="background:#3b82f6; padding:4px 10px; font-size:0.8rem;" onclick="adjustEnumRows(this, 1)">+ إضافة عنصر تعداد</button>
+                        <button type="button" class="btn" style="background:#ef4444; padding:4px 10px; font-size:0.8rem;" onclick="adjustEnumRows(this, -1)">- حذف عنصر</button>
+                    </div>`;
+                }
+                html += `</div>`;
+                return html;
+            } else if (['عرّف', 'اذكر', 'صحح الخطأ'].includes(type)) {
                 const studentVal = (isStudent && data?.studentAns) ? data.studentAns : '';
                 const readonlyAttr = isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب (سيظهر للطالب أثناء الاختبار هنا)..."';
                 return `<div>
@@ -411,6 +439,21 @@
             saveAll();
         }
 
+        function adjustEnumRows(btn, change) {
+            const card = btn.closest('.question-card');
+            let enumItems = [];
+            let subScores = [];
+            card.querySelectorAll('.enum-label-input').forEach(i => enumItems.push(i.value));
+            card.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
+
+            if (change === 1) { enumItems.push(''); subScores.push(1); }
+            else if (change === -1 && enumItems.length > 1) { enumItems.pop(); subScores.pop(); }
+
+            const ansArea = card.querySelector('.ans-grid-area');
+            ansArea.innerHTML = renderOptionsByType('عددّد', { opts: enumItems, subScores: subScores }, false);
+            saveAll();
+        }
+
         function bindOptionClickEvents(card, isStudent) {
             card.querySelectorAll('.opt-pair-row').forEach(row => {
                 row.onclick = () => { 
@@ -445,13 +488,15 @@
                 if (!Array.isArray(arr)) throw new Error("Not an array");
 
                 arr.forEach(item => {
-                    let mappedType = "4 خيارات";
+                    let mappedType = "اختر الإجابة الصحيحة";
                     let itemType = (item.t || "").trim();
                     if (itemType.includes("صح وخطأ") || itemType.includes("صح") || itemType.includes("خطأ")) {
                         mappedType = "صح وخطأ";
                     } else if (itemType.includes("مزاوجة") || itemType.includes("توصيل")) {
                         mappedType = "مزاوجة";
-                    } else if (['عرّف', 'عددّد', 'اذكر', 'صحح الخطأ'].includes(itemType)) {
+                    } else if (itemType.includes("عدد") || itemType.includes("عددّد")) {
+                        mappedType = "عددّد";
+                    } else if (['عرّف', 'اذكر', 'صحح الخطأ'].includes(itemType)) {
                         mappedType = itemType;
                     }
 
@@ -591,14 +636,14 @@
             report.innerHTML = "";
 
             answersArray.forEach((ans, i) => {
-                let formattedAns = ans.qType === 'مزاوجة' ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
+                let formattedAns = (ans.qType === 'مزاوجة' || ans.qType === 'عددّد') ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 let earned = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? ans.maxScore : 0);
                 report.innerHTML += `<tr>
                     <td>${i+1}</td>
                     <td style="text-align:right">${ans.qText || ''}</td>
-                    <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
+                    <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType}</span></td>
                     <td style="text-align:right">${formattedAns}</td>
-                    <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
+                    <td style="color:var(--success-green); font-weight:bold">${ans.correctAns || 'إجابة تحريرية'}</td>
                     <td>${earned} من ${ans.maxScore}</td>
                 </tr>`;
             });
@@ -620,14 +665,14 @@
             answersArray.forEach((ans, i) => {
                 const maxS = ans.maxScore || 1;
                 const earnedS = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? maxS : 0);
-                let formattedAns = ans.qType === 'مزاوجة' ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
+                let formattedAns = (ans.qType === 'مزاوجة' || ans.qType === 'عددّد') ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 report.innerHTML += `
                     <tr>
                         <td>${i+1}</td>
                         <td style="text-align:right">${ans.qText || ''}</td>
-                        <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
+                        <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType}</span></td>
                         <td style="text-align:right">${formattedAns}</td>
-                        <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
+                        <td style="color:var(--success-green); font-weight:bold">${ans.correctAns || 'تعديل يدوي'}</td>
                         <td>
                             <input type="number" min="0" max="${maxS}" class="score-edit-input" data-index="${i}" value="${earnedS}" style="width:55px; text-align:center; padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;"> (من ${maxS})
                         </td>
@@ -714,20 +759,24 @@
 
             cards.forEach((c, index) => {
                 c.classList.remove('unanswered-alert');
-                const qType = c.querySelector('.type-select')?.value || "4 خيارات";
+                const qType = c.querySelector('.type-select')?.value || "اختر الإجابة الصحيحة";
                 const hasSelected = c.querySelector('.selected-opt');
                 const textAns = c.querySelector('.student-answer-textarea')?.value.trim();
                 
-                let isMatchingFilled = true;
+                let isFilled = true;
                 if (qType === 'مزاوجة') {
                     c.querySelectorAll('.matching-ans-input').forEach(inp => {
-                        if (!inp.value.trim()) isMatchingFilled = false;
+                        if (!inp.value.trim()) isFilled = false;
+                    });
+                } else if (qType === 'عددّد') {
+                    c.querySelectorAll('.enum-ans-input').forEach(inp => {
+                        if (!inp.value.trim()) isFilled = false;
                     });
                 }
 
-                if ((['4 خيارات', 'صح وخطأ'].includes(qType) && !hasSelected) || 
-                    (['عرّف', 'عددّد', 'اذكر', 'صحح الخطأ'].includes(qType) && !textAns) ||
-                    (qType === 'مزاوجة' && !isMatchingFilled)) {
+                if ((['اختر الإجابة الصحيحة', 'صح وخطأ'].includes(qType) && !hasSelected) || 
+                    (['عرّف', 'اذكر', 'صحح الخطأ'].includes(qType) && !textAns) ||
+                    ((qType === 'مزاوجة' || qType === 'عددّد') && !isFilled)) {
                     c.classList.add('unanswered-alert');
                     if (firstUnansweredIndex === -1) firstUnansweredIndex = index + 1;
                 }
@@ -747,7 +796,7 @@
 
             cards.forEach((c) => {
                 const qTxt = c.querySelector('.hidden-q-text')?.value || "سؤال";
-                const qType = c.querySelector('.type-select')?.value || "4 خيارات";
+                const qType = c.querySelector('.type-select')?.value || "اختر الإجابة الصحيحة";
                 const correctKey = c.querySelector('.hidden-correct-ans')?.value.trim() || c.querySelector('.ans-val')?.value.trim() || "";
 
                 if (qType === 'مزاوجة') {
@@ -784,13 +833,43 @@
                         earnedScore: questionEarned,
                         isCorrect: questionEarned === questionMaxScore
                     });
+                } else if (qType === 'عددّد') {
+                    let studentEnum = {};
+                    c.querySelectorAll('.enum-ans-input').forEach(inp => {
+                        studentEnum[inp.dataset.enumIdx] = inp.value.trim();
+                    });
+
+                    let enumSubScores = c.querySelectorAll('.sub-score-input');
+                    let questionMaxScore = 0;
+                    let questionEarned = 0;
+
+                    enumSubScores.forEach((inp, i) => {
+                        let subScore = parseInt(inp.value) || 1;
+                        questionMaxScore += subScore;
+                        totalPossibleScore += subScore;
+
+                        if (studentEnum[i] && studentEnum[i].trim() !== "") {
+                            questionEarned += subScore; // تُحتسب الدرجة بمجرد كتابة الطالب لإجابة صحيحة داخل عنصر التعداد
+                        }
+                    });
+
+                    totalScore += questionEarned;
+                    details.push({
+                        qText: qTxt,
+                        qType: qType,
+                        studentAns: studentEnum,
+                        correctAns: 'إجابة عناصر متعددة',
+                        maxScore: questionMaxScore,
+                        earnedScore: questionEarned,
+                        isCorrect: questionEarned === questionMaxScore
+                    });
                 } else {
                     const questionMaxScore = parseInt(c.querySelector('.q-score-input')?.value) || 1;
                     totalPossibleScore += questionMaxScore;
                     let selWord = "";
                     let isCorrect = false;
 
-                    if (['4 خيارات', 'صح وخطأ'].includes(qType)) {
+                    if (['اختر الإجابة الصحيحة', 'صح وخطأ'].includes(qType)) {
                         selWord = c.querySelector('.selected-opt .opt')?.value || "";
                         isCorrect = (selWord.trim() === correctKey.trim());
                     } else {
@@ -962,7 +1041,7 @@
         function saveAll() { 
             const qs = []; 
             document.querySelectorAll('.question-card').forEach(c => { 
-                const qType = c.querySelector('.type-select')?.value || '4 خيارات';
+                const qType = c.querySelector('.type-select')?.value || 'اختر الإجابة الصحيحة';
                 let opts = [];
                 let rightOpts = [];
                 let subScores = [];
@@ -971,6 +1050,9 @@
                     c.querySelectorAll('.opt-left').forEach(i => opts.push(i.value));
                     c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
                     c.querySelectorAll('.opt-right').forEach(i => rightOpts.push(i.value));
+                } else if (qType === 'عددّد') {
+                    c.querySelectorAll('.enum-label-input').forEach(i => opts.push(i.value));
+                    c.querySelectorAll('.sub-score-input').forEach(i => subScores.push(parseInt(i.value) || 1));
                 } else {
                     opts = Array.from(c.querySelectorAll('.opt')).map(i => i.value);
                 }
