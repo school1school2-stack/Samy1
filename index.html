@@ -253,7 +253,6 @@
             document.getElementById('quiz-content').innerHTML = '';
             localStorage.removeItem('samy_exam_data');
             addQuestion();
-            alert(`تم إنشاء النموذج (${currentOpenModelName}) بنجاح. أضف أسئلتك وسيتم الحفظ الفوري تلقائياً.`);
         }
 
         function addQuestion(data = null) {
@@ -1020,9 +1019,8 @@
         }
 
         async function saveToCloud() {
-            let modelName = currentOpenModelName;
-            if (!modelName) {
-                modelName = prompt("أدخل اسم النموذج لحفظه في السحابة:");
+            if (!currentOpenModelName) {
+                const modelName = prompt("أدخل اسم النموذج لحفظه في السحابة:");
                 if (!modelName) return;
                 currentOpenModelName = modelName.trim();
                 document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
@@ -1033,10 +1031,11 @@
                 data: dataToSave,
                 date: new Date().toLocaleString()
             });
+            alert(`تم الحفظ بنجاح في النموذج (${currentOpenModelName})! 💾`);
         }
 
         function closeModals() { 
-            document.getElementById('report-modal').style.display = 'none'; 
+            document.getElementById('report-modal').style.display : 'none'; 
             document.getElementById('cloud-modal').style.display = 'none'; 
             document.getElementById('history-modal').style.display = 'none';
             document.getElementById('modal-overlay').style.display = 'none'; 
@@ -1077,7 +1076,7 @@
             
             localStorage.setItem('samy_exam_data', JSON.stringify(qs));
 
-            // الحفظ التلقائي المباشر في السحابة إذا كان هناك نموذج مفتوح حالياً
+            // الحفظ التلقائي المباشر بالاعتماد حصرياً على اسم النموذج الحالي دون إزعاج أو طلب الاسم مجدداً
             if (currentOpenModelName) {
                 rtdb.ref('models/' + currentOpenModelName).update({
                     teacher: "د. سامي بن محمد العمر",
