@@ -229,6 +229,19 @@
             return array;
         }
 
+        function formatStudentAnswerDisplay(ansVal) {
+            if (!ansVal) return '--';
+            if (typeof ansVal === 'object') {
+                let parts = [];
+                Object.keys(ansVal).sort((a,b)=>a-b).forEach(k => {
+                    let fNum = parseInt(k) + 1;
+                    parts.push(`فقرة ${fNum} $\leftarrow$ إجابة ${ansVal[k]}`);
+                });
+                return parts.join(' | ');
+            }
+            return ansVal;
+        }
+
         function createNewModelPrompt() {
             const modelName = prompt("أدخل اسم النموذج الجديد قبل البدء:");
             if (!modelName || !modelName.trim()) return;
@@ -558,11 +571,12 @@
             report.innerHTML = "";
 
             answersArray.forEach((ans, i) => {
+                let formattedAns = ans.qType === 'مزاوجة' ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 report.innerHTML += `<tr>
                     <td>${i+1}</td>
                     <td style="text-align:right">${ans.qText || ''}</td>
                     <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
-                    <td>${typeof ans.studentAns === 'object' ? JSON.stringify(ans.studentAns) : (ans.studentAns || '--')}</td>
+                    <td style="text-align:right">${formattedAns}</td>
                     <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
                     <td>${ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? 1 : 0)}</td>
                 </tr>`;
@@ -585,12 +599,13 @@
             answersArray.forEach((ans, i) => {
                 const maxS = ans.maxScore || 1;
                 const earnedS = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? 1 : 0);
+                let formattedAns = ans.qType === 'مزاوجة' ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 report.innerHTML += `
                     <tr>
                         <td>${i+1}</td>
                         <td style="text-align:right">${ans.qText || ''}</td>
                         <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType || '4 خيارات'}</span></td>
-                        <td>${typeof ans.studentAns === 'object' ? JSON.stringify(ans.studentAns) : (ans.studentAns || '--')}</td>
+                        <td style="text-align:right">${formattedAns}</td>
                         <td style="color:var(--success-green); font-weight:bold">${ans.correctAns}</td>
                         <td>
                             <input type="number" min="0" max="${maxS}" class="score-edit-input" data-index="${i}" value="${earnedS}" style="width:50px; text-align:center; padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;"> (من ${maxS})
@@ -720,13 +735,11 @@
                         studentMatching[inp.dataset.leftIdx] = inp.value.trim();
                     });
 
-                    // تحليل مفتاح الإجابة المعطى بمسافات (مثل: 5 3 2 4 1)
                     let correctArr = correctKey.split(/\s+/);
                     let leftRowsCount = c.querySelectorAll('.opt-left').length;
                     let questionEarned = 0;
 
                     for (let i = 0; i < leftRowsCount; i++) {
-                        let currentMax = totalPossibleScore + 1; // زيادة إجمالي الدرجات لكل فقرة
                         totalPossibleScore++;
                         let studentVal = (studentMatching[i] || "").toString().trim();
                         let correctVal = (correctArr[i] || "").toString().trim();
@@ -953,6 +966,8 @@
                 document.getElementById('student-auth-container').style.display = 'block';
                 rtdb.ref('models/' + id).once('value', s => { 
                     if (s.val() && s.val().data) {
+                        currentOpenModelName = id;
+                        document.getElementById('current-model-label').innerText = `📁 ${id}`;
                         shuffleArray([...s.val().data]).forEach(q => addQuestion(q));
                     } else {
                         alert("النموذج غير موجود في السحاب.");
