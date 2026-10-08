@@ -269,7 +269,7 @@
                 </div>
                 <div class="ans-grid-area">${renderOptionsByType(selectedType, data, isStudent)}</div>
                 <div class="correct-ans-box admin-only">
-                    <input type="text" placeholder="الإجابة الصحيحة النموذجية (مثلاً لمزاوجة: {\"0\":\"2\",\"1\":\"1\"})" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
+                    <input type="text" placeholder="الإجابة الصحيحة (لمزاوجة اكتب الأرقام بمسافات مثل: 5 3 2 4 1)" class="correct-input ans-val" value="${correctAnsVal}" oninput="saveAll()">
                 </div>
                 <input type="hidden" class="hidden-correct-ans" value="${correctAnsVal}">
                 <input type="hidden" class="hidden-q-text" value="${qTextVal}">
@@ -720,15 +720,18 @@
                         studentMatching[inp.dataset.leftIdx] = inp.value.trim();
                     });
 
-                    let correctObj = {};
-                    try { correctObj = JSON.parse(correctKey); } catch(e) {}
-
+                    // تحليل مفتاح الإجابة المعطى بمسافات (مثل: 5 3 2 4 1)
+                    let correctArr = correctKey.split(/\s+/);
                     let leftRowsCount = c.querySelectorAll('.opt-left').length;
                     let questionEarned = 0;
 
                     for (let i = 0; i < leftRowsCount; i++) {
+                        let currentMax = totalPossibleScore + 1; // زيادة إجمالي الدرجات لكل فقرة
                         totalPossibleScore++;
-                        if (correctObj[i] && correctObj[i].toString().trim() === (studentMatching[i] || "").toString().trim()) {
+                        let studentVal = (studentMatching[i] || "").toString().trim();
+                        let correctVal = (correctArr[i] || "").toString().trim();
+
+                        if (correctVal !== "" && studentVal === correctVal) {
                             questionEarned++;
                         }
                     }
