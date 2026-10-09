@@ -45,6 +45,69 @@
         }
         .bar-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
+        .styled-dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            transition: 0.3s;
+        }
+        .dropdown-toggle-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .dropdown-toggle-btn .fa-chevron-down { font-size: 0.7rem; transition: transform 0.3s; margin-right: 4px; }
+        
+        .styled-dropdown-wrapper.active .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            background: #1e293b;
+            min-width: 180px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            border-radius: 12px;
+            z-index: 1000;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dropdown-menu-content button {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px 14px;
+            text-align: right;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .dropdown-menu-content button:hover { background: rgba(255, 255, 255, 0.1); }
+        .styled-dropdown-wrapper.active .dropdown-menu-content { display: block; }
+
         .auth-card, .array-import-box, .search-result-box {
             width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box;
@@ -87,6 +150,16 @@
         .matching-row input[type="text"] { flex: 1; min-width: 100px; }
         .matching-row input[type="number"], .enum-row input[type="number"] { width: 50px; text-align: center; padding: 6px; border: 1px solid #10b981; border-radius: 6px; font-weight: bold; color: #166534; }
         .enum-row input[type="text"] { flex: 1; min-width: 150px; }
+
+        .matching-error-msg {
+            width: 100%;
+            color: var(--q-red);
+            font-size: 0.82rem;
+            font-weight: bold;
+            margin-top: -4px;
+            margin-bottom: 6px;
+            display: none;
+        }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .options-grid { display: flex; flex-direction: column; } }
@@ -134,7 +207,7 @@
         <div id="score-summary" style="text-align: center; font-size: 1.2rem; font-weight: bold; margin: 15px 0;"></div>
         <table class="report-table">
             <thead>
-                <tr id="report-table-header"><th>#</th><th>السؤال</th><th>إجابتك</th><th>الصحيحة</th><th>الدرجة</th></tr>
+                <tr id="report-table-header"><th>#</th><th>السؤال</th><th>نوعه</th><th>إجابتك</th><th>الصحيحة</th><th>الدرجة</th></tr>
             </thead>
             <tbody id="report-body"></tbody>
         </table>
@@ -151,11 +224,19 @@
     <div class="top-action-bar admin-only" id="admin-top-bar">
         <div class="bar-group">
             <span id="current-model-label" style="color: #38bdf8; font-weight: bold; font-size: 0.9rem; margin-left: 5px;">📁 نموذج جديد</span>
-            <button class="btn btn-new" onclick="createNewModelPrompt()"><i class="fas fa-plus-circle"></i> نموذج</button>
-            <button class="btn btn-save" onclick="saveToCloud()"><i class="fas fa-save"></i> حفظ يدوي</button>
-            <button class="btn btn-link" onclick="copyCurrentModelLink()"><i class="fas fa-link"></i> الرابط</button>
-            <button class="btn btn-rename" onclick="renameCurrentModel()"><i class="fas fa-signature"></i> إعادة تسمية</button>
-            <button class="btn btn-del" onclick="deleteCurrentModel()"><i class="fas fa-trash"></i> حذف</button>
+            
+            <div class="styled-dropdown-wrapper" id="mainActionsDropdown">
+                <button type="button" class="dropdown-toggle-btn" onclick="toggleDropdown(event)">
+                    <i class="fas fa-bars"></i> خيارات النماذج <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu-content">
+                    <button type="button" onclick="createNewModelPrompt()"><i class="fas fa-plus-circle" style="color:#10b981;"></i> نموذج جديد</button>
+                    <button type="button" onclick="saveToCloud()"><i class="fas fa-save" style="color:#a855f7;"></i> حفظ يدوي</button>
+                    <button type="button" onclick="copyCurrentModelLink()"><i class="fas fa-link" style="color:#06b6d4;"></i> رابط الطلاب</button>
+                    <button type="button" onclick="renameCurrentModel()"><i class="fas fa-signature" style="color:#f59e0b;"></i> إعادة تسمية</button>
+                    <button type="button" onclick="deleteCurrentModel()"><i class="fas fa-trash" style="color:#ef4444;"></i> حذف النموذج</button>
+                </div>
+            </div>
         </div>
         <div class="bar-group">
             <button class="btn btn-load" onclick="loadFromCloud()"><i class="fas fa-folder-open"></i> فتح</button>
@@ -222,6 +303,17 @@
         const rtdb = samyApp.database();
         const fsDb = samyApp.firestore();
 
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const wrapper = document.getElementById('mainActionsDropdown');
+            wrapper.classList.toggle('active');
+        }
+
+        window.addEventListener('click', function() {
+            const wrapper = document.getElementById('mainActionsDropdown');
+            if (wrapper) wrapper.classList.remove('active');
+        });
+
         function autoResizeTextarea(el) {
             el.style.height = 'auto';
             el.style.height = (el.scrollHeight) + 'px';
@@ -235,8 +327,18 @@
             return array;
         }
 
-        function formatStudentAnswerDisplay(ansVal) {
+        function formatStudentAnswerDisplay(ansVal, qType) {
             if (!ansVal) return '--';
+            if (qType && (qType.includes('مزاوجة') || qType.includes('عددّد'))) {
+                if (typeof ansVal === 'object') {
+                    let parts = [];
+                    Object.keys(ansVal).sort((a,b)=>a-b).forEach(k => {
+                        parts.push(ansVal[k]);
+                    });
+                    return parts.join(' | ');
+                }
+                return ansVal;
+            }
             if (typeof ansVal === 'object') {
                 let parts = [];
                 Object.keys(ansVal).sort((a,b)=>a-b).forEach(k => {
@@ -246,6 +348,54 @@
                 return parts.join(' | ');
             }
             return ansVal;
+        }
+
+        function getColoredMatchingHtml(studentAns, correctAns) {
+            let studentArr = [];
+            if (typeof studentAns === 'object' && studentAns !== null) {
+                let keys = Object.keys(studentAns).sort((a,b)=>a-b);
+                keys.forEach(k => studentArr.push(studentAns[k] || ''));
+            } else if (typeof studentAns === 'string') {
+                studentArr = studentAns.trim().split(/\s+/);
+            }
+            let correctArr = (correctAns || '').trim().split(/\s+/);
+            
+            let htmlParts = [];
+            for (let i = 0; i < studentArr.length; i++) {
+                let sVal = studentArr[i] || '';
+                let cVal = correctArr[i] || '';
+                let color = (sVal !== '' && sVal === cVal) ? 'var(--success-green)' : 'var(--q-red)';
+                htmlParts.push(`<span style="color: ${color}; font-weight: bold;">${sVal || '--'}</span>`);
+            }
+            return htmlParts.join(' ');
+        }
+
+        function getColoredEnumHtml(studentAns, optLabels) {
+            let studentArr = [];
+            if (typeof studentAns === 'object' && studentAns !== null) {
+                let keys = Object.keys(studentAns).sort((a,b)=>a-b);
+                keys.forEach(k => studentArr.push(studentAns[k] || ''));
+            } else if (typeof studentAns === 'string') {
+                studentArr = studentAns.trim().split(/\s+/);
+            }
+            
+            let htmlParts = [];
+            for (let i = 0; i < studentArr.length; i++) {
+                let sVal = studentArr[i] || '';
+                let targetKey = (optLabels && optLabels[i] ? optLabels[i] : '').trim().toLowerCase();
+                let studentValLower = sVal.trim().toLowerCase();
+
+                let isMatch = false;
+                if (studentValLower !== '') {
+                    if (targetKey !== '' && (studentValLower.includes(targetKey) || targetKey.includes(studentValLower))) {
+                        isMatch = true;
+                    }
+                }
+
+                let color = isMatch ? 'var(--success-green)' : 'var(--q-red)';
+                htmlParts.push(`<span style="color: ${color}; font-weight: bold;">${sVal || '--'}</span>`);
+            }
+            return htmlParts.join(' | ');
         }
 
         function createNewModelPrompt() {
@@ -349,9 +499,10 @@
                     leftHtml += `<div class="matching-row" data-subscore="${subScoreVal}">
                         ${!isStudent ? `<input type="text" class="opt opt-left" value="${item}" placeholder="فقرة ${idx+1}" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">${idx+1})${item}</span>`}
                         ${!isStudent ? `<input type="number" min="1" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذه الفقرة">` : ``}
-                        <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:50px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
+                        <input type="text" class="matching-ans-input" data-left-idx="${idx}" ${isStudent ? `oninput="validateMatchingInput(this, ${rightOpts.length})"` : 'disabled placeholder="رقم الإجابة"'} value="${sVal}" style="width:50px; text-align:center; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;" maxlength="2">
                     </div>`;
                 });
+                leftHtml += `<div class="matching-error-msg"></div>`;
                 if(!isStudent) {
                     leftHtml += `<div class="matching-controls" style="margin-top:10px; display:flex; gap:8px;">
                         <button type="button" class="btn" style="background:#3b82f6; padding:4px 10px; font-size:0.8rem;" onclick="adjustMatchingRows(this, 'left', 1)">+ إضافة فقرة</button>
@@ -391,7 +542,7 @@
                         <span style="font-weight:bold; color:#0284c7; width:20px;">${idx+1}.</span>
                         ${!isStudent ? `<input type="text" class="enum-label-input" value="${item}" placeholder="مفتاح الإجابة لهذا العنصر" oninput="saveAll()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">` : `<span style="flex:1;">عنصر ${idx+1}</span>`}
                         ${!isStudent ? `<input type="number" min="1" class="sub-score-input" value="${subScoreVal}" oninput="saveAll()" title="درجة هذا العنصر">` : ``}
-                        <input type="text" class="enum-ans-input" data-enum-idx="${idx}" ${isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب للعنصر"'} value="${sVal}" style="flex:2; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
+                        <input type="text" class="enum-ans-input" data-enum-idx="${idx}" ${isStudent ? 'oninput="this.closest(\'.question-card\').classList.remove(\'unanswered-alert\')"' : 'disabled placeholder="مربع إجابة الطالب للعنصر"'} value="${sVal}" style="flex:2; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
                     </div>`;
                 });
 
@@ -405,7 +556,7 @@
                 return html;
             } else if (['عرّف', 'اذكر', 'صحح الخطأ'].includes(type)) {
                 const studentVal = (isStudent && data?.studentAns) ? data.studentAns : '';
-                const readonlyAttr = isStudent ? '' : 'disabled placeholder="مربع إجابة الطالب (سيظهر للطالب أثناء الاختبار هنا)..."';
+                const readonlyAttr = isStudent ? 'oninput="this.closest(\'.question-card\').classList.remove(\'unanswered-alert\')"' : 'disabled placeholder="مربع إجابة الطالب (سيظهر للطالب أثناء الاختبار هنا)..."';
                 return `<div>
                     <label style="display:block; font-weight:bold; color:#0284c7; margin-bottom:5px; font-size:0.9rem;">إجابة الطالب التحريرية:</label>
                     <textarea class="student-answer-textarea" ${readonlyAttr}>${studentVal}</textarea>
@@ -416,11 +567,55 @@
                 if (isStudent && opts.length > 0) opts = shuffleArray(opts);
                 let h = '<div class="options-grid">';
                 for(let i=0; i<opts.length; i++) {
-                    const readonlyInput = isStudent ? 'readonly style="background:transparent; cursor:pointer; pointer-events:none;"' : '';
+                    const readonlyInput = isStudent ? 'readonly style="background:transparent; cursor:pointer;"' : '';
                     h+=`<div class="opt-pair-row"><span class="opt-label">${labels[i]}</span><input type="text" class="opt-word opt" ${readonlyInput} placeholder="خيار ${labels[i]}" value="${opts[i]||''}" oninput="saveAll()"></div>`;
                 }
                 return h + '</div>';
             }
+        }
+
+        function validateMatchingInput(inputEl, maxOptionsCount) {
+            const card = inputEl.closest('.question-card');
+            card.classList.remove('unanswered-alert');
+            const errorMsgEl = card.querySelector('.matching-error-msg');
+
+            let val = inputEl.value.replace(/[^0-9]/g, '');
+            inputEl.value = val;
+
+            if (val === '') {
+                if (errorMsgEl) errorMsgEl.style.display = 'none';
+                return;
+            }
+
+            let num = parseInt(val, 10);
+
+            if (num < 1 || num > maxOptionsCount) {
+                if (errorMsgEl) {
+                    errorMsgEl.innerText = `⚠️ عذراً، الرقم يجب أن يكون بين 1 و ${maxOptionsCount} فقط.`;
+                    errorMsgEl.style.display = 'block';
+                }
+                inputEl.value = '';
+                return;
+            }
+
+            let allInputs = card.querySelectorAll('.matching-ans-input');
+            let isDuplicate = false;
+            allInputs.forEach(inp => {
+                if (inp !== inputEl && inp.value.trim() === val) {
+                    isDuplicate = true;
+                }
+            });
+
+            if (isDuplicate) {
+                if (errorMsgEl) {
+                    errorMsgEl.innerText = `⚠️ الرقم (${val}) تم إدخاله مسبقاً في فقرة أخرى، لا يُسمح بالتكرار.`;
+                    errorMsgEl.style.display = 'block';
+                }
+                inputEl.value = '';
+                return;
+            }
+
+            if (errorMsgEl) errorMsgEl.style.display = 'none';
         }
 
         function adjustMatchingRows(btn, side, change) {
@@ -465,9 +660,11 @@
                 row.onclick = () => { 
                     const examId = new URLSearchParams(window.location.search).get('exam');
                     if (examId && localStorage.getItem('submitted_' + examId) === 'true') return;
-                    card.classList.remove('unanswered-alert');
-                    card.querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt')); 
-                    row.classList.add('selected-opt');
+                    if (isStudent) {
+                        card.classList.remove('unanswered-alert');
+                        card.querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt')); 
+                        row.classList.add('selected-opt');
+                    }
                 };
             });
         }
@@ -662,18 +859,31 @@
             report.innerHTML = "";
 
             answersArray.forEach((ans, i) => {
-                let formattedAns = (ans.qType === 'مزاوجة' || ans.qType === 'عددّد') ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 let earned = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? ans.maxScore : 0);
                 
+                let studentAnswerHtml = '';
                 let correctDisplay = ans.correctAns || 'إجابة تحريرية';
-                if (ans.qType === 'مزاوجة') correctDisplay = `مفتاح الترتيب: ${ans.correctAns}`;
+
+                if (ans.qType === 'مزاوجة') {
+                    correctDisplay = ans.correctAns ? ans.correctAns.replace(/\s+/g, ' ').trim() : '';
+                    studentAnswerHtml = getColoredMatchingHtml(ans.studentAns, ans.correctAns);
+                } else if (ans.qType === 'عددّد') {
+                    correctDisplay = 'عناصر التعداد المحددة';
+                    studentAnswerHtml = getColoredEnumHtml(ans.studentAns, ans.opts);
+                } else {
+                    let formattedAns = formatStudentAnswerDisplay(ans.studentAns, ans.qType);
+                    let cleanFormattedAns = formattedAns.replace(/\s+/g, ' ').trim();
+                    let isMatchCorrect = (cleanFormattedAns === correctDisplay);
+                    let ansColorStyle = isMatchCorrect ? "color: var(--success-green); font-weight: bold;" : "color: var(--q-red); font-weight: bold;";
+                    studentAnswerHtml = `<span style="${ansColorStyle}">${formattedAns}</span>`;
+                }
 
                 report.innerHTML += `<tr>
                     <td>${i+1}</td>
                     <td style="text-align:right">${ans.qText || ''}</td>
                     <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType}</span></td>
-                    <td style="text-align:right">${formattedAns}</td>
-                    <td style="color:var(--success-green); font-weight:bold">${correctDisplay}</td>
+                    <td style="direction:ltr;">${studentAnswerHtml}</td>
+                    <td style="color:var(--success-green); font-weight:bold; direction:ltr;">${correctDisplay}</td>
                     <td>${earned} من ${ans.maxScore}</td>
                 </tr>`;
             });
@@ -695,18 +905,31 @@
             answersArray.forEach((ans, i) => {
                 const maxS = ans.maxScore || 1;
                 const earnedS = ans.earnedScore !== undefined ? ans.earnedScore : (ans.isCorrect ? maxS : 0);
-                let formattedAns = (ans.qType === 'مزاوجة' || ans.qType === 'عددّد') ? formatStudentAnswerDisplay(ans.studentAns) : (ans.studentAns || '--');
                 
+                let studentAnswerHtml = '';
                 let correctDisplay = ans.correctAns || 'تعديل يدوي';
-                if (ans.qType === 'مزاوجة') correctDisplay = `مفتاح الترتيب: ${ans.correctAns}`;
+
+                if (ans.qType === 'مزاوجة') {
+                    correctDisplay = ans.correctAns ? ans.correctAns.replace(/\s+/g, ' ').trim() : '';
+                    studentAnswerHtml = getColoredMatchingHtml(ans.studentAns, ans.correctAns);
+                } else if (ans.qType === 'عددّد') {
+                    correctDisplay = 'عناصر التعداد المحددة';
+                    studentAnswerHtml = getColoredEnumHtml(ans.studentAns, ans.opts);
+                } else {
+                    let formattedAns = formatStudentAnswerDisplay(ans.studentAns, ans.qType);
+                    let cleanFormattedAns = formattedAns.replace(/\s+/g, ' ').trim();
+                    let isMatchCorrect = (cleanFormattedAns === correctDisplay);
+                    let ansColorStyle = isMatchCorrect ? "color: var(--success-green); font-weight: bold;" : "color: var(--q-red); font-weight: bold;";
+                    studentAnswerHtml = `<span style="${ansColorStyle}">${formattedAns}</span>`;
+                }
 
                 report.innerHTML += `
                     <tr>
                         <td>${i+1}</td>
                         <td style="text-align:right">${ans.qText || ''}</td>
                         <td><span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${ans.qType}</span></td>
-                        <td style="text-align:right">${formattedAns}</td>
-                        <td style="color:var(--success-green); font-weight:bold">${correctDisplay}</td>
+                        <td style="direction:ltr;">${studentAnswerHtml}</td>
+                        <td style="color:var(--success-green); font-weight:bold; direction:ltr;">${correctDisplay}</td>
                         <td>
                             <input type="number" min="0" max="${maxS}" class="score-edit-input" data-index="${i}" value="${earnedS}" style="width:55px; text-align:center; padding:4px; border-radius:6px; font-weight:bold; font-family:inherit;"> (من ${maxS})
                         </td>
@@ -1101,7 +1324,6 @@
 
         function updateNumbers() { document.querySelectorAll('.q-number-badge').forEach((b, i) => b.innerText = `السؤال ${i+1}`); }
         
-        // --- تحديث المزامنة الآلية مع مربع النص للمصفوفة ---
         function saveAll() { 
             const qs = []; 
             const arrayItems = [];
